@@ -232,11 +232,10 @@
                                     <a href="{{ route('aset.show', $a->kode_aset) }}" class="act-btn act-view" title="Detail"><i class="fas fa-eye"></i></a>
                                     <a href="{{ route('aset.edit', $a->kode_aset) }}" class="act-btn act-edit" title="Edit"><i class="fas fa-pencil-alt"></i></a>
                                     <a href="{{ route('aset.showQr', $a->kode_aset) }}" class="act-btn act-qr" title="QR Code" target="_blank"><i class="fas fa-qrcode"></i></a>
-                                    <form action="{{ route('aset.destroy', $a->kode_aset) }}" method="POST" style="display:inline;margin:0;"
-                                        data-confirm data-confirm-name="{{ $a->kode_aset }}">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="act-btn act-del" title="Hapus"><i class="fas fa-trash-alt"></i></button>
-                                    </form>
+                                    <button type="button" class="act-btn act-del" title="Hapus"
+                                        onclick="singleDelete('{{ route('aset.destroy', $a->kode_aset) }}', '{{ $a->kode_aset }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -312,6 +311,12 @@
     </div>
 </div>
 
+{{-- Hidden form untuk single delete aset --}}
+<form id="singleDeleteForm" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 @push('scripts')
 <script>
 const checkAll  = document.getElementById('checkAll');
@@ -341,6 +346,16 @@ function bulkDelete() {
         checked.length + ' aset terpilih',
         'Semua aset yang dipilih akan dihapus permanen.'
     ).then(ok => { if (ok) document.getElementById('bulkForm').submit(); });
+}
+
+function singleDelete(actionUrl, kodeAset) {
+    deleteConfirm(kodeAset, 'Aset ini akan dihapus permanen.').then(ok => {
+        if (ok) {
+            const form = document.getElementById('singleDeleteForm');
+            form.action = actionUrl;
+            form.submit();
+        }
+    });
 }
 
 function bulkQr(e) {

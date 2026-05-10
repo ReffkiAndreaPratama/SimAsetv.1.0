@@ -38,8 +38,8 @@ class BarangController extends Controller
         $validated = $request->validate([
             'nama_barang' => 'required|string|max:100',
             'kategori'    => 'nullable|string|max:100',
-            'jumlah'      => 'nullable|integer|min:0',
-            'keterangan'  => 'nullable|string',
+            'jumlah'      => 'nullable|integer|min:0|max:99999',
+            'keterangan'  => 'nullable|string|max:1000',
         ]);
 
         $kode = Barang::generateKode();
@@ -67,8 +67,8 @@ class BarangController extends Controller
         $validated = $request->validate([
             'nama_barang' => 'required|string|max:100',
             'kategori'    => 'nullable|string|max:100',
-            'jumlah'      => 'nullable|integer|min:0',
-            'keterangan'  => 'nullable|string',
+            'jumlah'      => 'nullable|integer|min:0|max:99999',
+            'keterangan'  => 'nullable|string|max:1000',
         ]);
 
         $barang->update($validated);

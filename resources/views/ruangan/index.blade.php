@@ -153,11 +153,10 @@
                                     <i class="fas fa-file-pdf"></i>
                                 </a>
                                 @endif
-                                <form action="{{ route('ruangan.destroy', $r->kode_ruangan) }}" method="POST" style="display:inline;margin:0;"
-                                    data-confirm data-confirm-name="{{ $r->nama_ruangan }}">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="act-btn act-del" title="Hapus"><i class="fas fa-trash-alt"></i></button>
-                                </form>
+                                <button type="button" class="act-btn act-del" title="Hapus"
+                                    onclick="singleDeleteRuangan('{{ route('ruangan.destroy', $r->kode_ruangan) }}', '{{ addslashes($r->nama_ruangan) }}')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -239,8 +238,24 @@
     </div>
 </div>
 
+{{-- Hidden form untuk delete ruangan --}}
+<form id="deleteRuanganForm" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 @push('scripts')
 <script>
+function singleDeleteRuangan(actionUrl, namaRuangan) {
+    deleteConfirm(namaRuangan, 'Ruangan ini akan dihapus permanen.').then(ok => {
+        if (ok) {
+            const form = document.getElementById('deleteRuanganForm');
+            form.action = actionUrl;
+            form.submit();
+        }
+    });
+}
+
 document.getElementById('modalRuanganSelect').addEventListener('change', function() {
     const link = document.getElementById('modalPdfLink');
     if (this.value) {

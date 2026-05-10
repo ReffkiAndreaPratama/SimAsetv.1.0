@@ -162,9 +162,9 @@ class ImportController extends Controller
                 'id_user'       => auth()->id(),
                 'kondisi'       => $this->normalizeKondisi(trim($row[2] ?? 'Baik')),
                 'status'        => $this->normalizeStatus(trim($row[3] ?? 'Aktif')),
-                'serial_number' => ! empty($row[4]) ? trim($row[4]) : null,
+                'serial_number' => ! empty($row[4]) ? $this->sanitizeCsvValue(trim($row[4])) : null,
                 'harga'         => ! empty($row[5]) ? (float) str_replace(['.', ','], ['', '.'], trim($row[5])) : null,
-                'keterangan'    => trim($row[6] ?? ''),
+                'keterangan'    => $this->sanitizeCsvValue(trim($row[6] ?? '')),
             ]);
 
             return ['success' => true];
@@ -188,10 +188,10 @@ class ImportController extends Controller
 
             Barang::create([
                 'kode_barang' => $kodeBarang,
-                'nama_barang' => trim($row[1]),
-                'kategori'    => trim($row[2] ?? ''),
+                'nama_barang' => $this->sanitizeCsvValue(trim($row[1])) ?? '',
+                'kategori'    => $this->sanitizeCsvValue(trim($row[2] ?? '')) ?? '',
                 'jumlah'      => intval($row[3] ?? 0),
-                'keterangan'  => trim($row[4] ?? ''),
+                'keterangan'  => $this->sanitizeCsvValue(trim($row[4] ?? '')) ?? '',
             ]);
 
             return ['success' => true];
@@ -224,5 +224,20 @@ class ImportController extends Controller
             'non aktif'   => 'Non-Aktif',
         ];
         return $map[strtolower($value)] ?? 'Aktif';
+    }
+
+    /**
+     * Sanitasi nilai CSV untuk mencegah CSV Injection.
+     * Karakter =, +, -, @ di awal nilai bisa dieksekusi sebagai formula di Excel/spreadsheet.
+     */
+    private function sanitizeCsvValue(?string $value): ?string
+    {
+        if ($value === null) return null;
+        $value = trim($value);
+        // Hapus karakter formula injection di awal string
+        if (strlen($value) > 0 && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"])) {
+            $value = "'" . $value;
+        }
+        return $value;
     }
 }

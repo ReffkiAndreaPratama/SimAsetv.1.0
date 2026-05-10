@@ -155,11 +155,10 @@
                                 <div class="act-group">
                                     <a href="{{ route('barang.show', $b->kode_barang) }}" class="act-btn act-view" title="Detail"><i class="fas fa-eye"></i></a>
                                     <a href="{{ route('barang.edit', $b->kode_barang) }}" class="act-btn act-edit" title="Edit"><i class="fas fa-pencil-alt"></i></a>
-                                    <form action="{{ route('barang.destroy', $b->kode_barang) }}" method="POST" style="display:inline;margin:0;"
-                                        data-confirm data-confirm-name="{{ $b->nama_barang }}">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="act-btn act-del" title="Hapus"><i class="fas fa-trash-alt"></i></button>
-                                    </form>
+                                    <button type="button" class="act-btn act-del" title="Hapus"
+                                        onclick="singleDeleteBarang('{{ route('barang.destroy', $b->kode_barang) }}', '{{ addslashes($b->nama_barang) }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -235,6 +234,12 @@
     </div>
 </div>
 
+{{-- Hidden form untuk single & bulk delete barang --}}
+<form id="singleDeleteBarangForm" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+</form>
+
 @push('scripts')
 <script>
 const checkAll  = document.getElementById('checkAll');
@@ -257,6 +262,16 @@ checkAll.addEventListener('change', function() {
 });
 document.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', updateBulkBar));
 
+function singleDeleteBarang(actionUrl, namaBarang) {
+    deleteConfirm(namaBarang, 'Barang ini akan dihapus permanen.').then(ok => {
+        if (ok) {
+            const form = document.getElementById('singleDeleteBarangForm');
+            form.action = actionUrl;
+            form.submit();
+        }
+    });
+}
+
 function bulkDelete() {
     const checked = document.querySelectorAll('.row-check:checked');
     if (checked.length === 0) return;
@@ -266,17 +281,21 @@ function bulkDelete() {
         (checked.length > 3 ? names + '...' : names)
     ).then(ok => {
         if (!ok) return;
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        checked.forEach(cb => {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        const items = Array.from(checked);
+        let idx = 0;
+        function deleteNext() {
+            if (idx >= items.length) { window.location.reload(); return; }
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '/barang/' + cb.value;
-            form.innerHTML =
-                '<input type="hidden" name="_token" value="' + token + '">' +
-                '<input type="hidden" name="_method" value="DELETE">';
+            form.action = '/barang/' + items[idx].value;
+            form.innerHTML = '<input type="hidden" name="_token" value="' + token + '">'
+                           + '<input type="hidden" name="_method" value="DELETE">';
             document.body.appendChild(form);
+            idx++;
             form.submit();
-        });
+        }
+        deleteNext();
     });
 }
 </script>

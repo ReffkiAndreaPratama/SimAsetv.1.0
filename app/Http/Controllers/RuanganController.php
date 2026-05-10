@@ -34,7 +34,7 @@ class RuanganController extends Controller
         $validated = $request->validate([
             'nama_ruangan' => 'required|string|max:100',
             'lantai'       => 'nullable|string|max:20',
-            'keterangan'   => 'nullable|string',
+            'keterangan'   => 'nullable|string|max:1000',
         ]);
 
         $kode = Ruangan::generateKode();
@@ -62,7 +62,7 @@ class RuanganController extends Controller
         $validated = $request->validate([
             'nama_ruangan' => 'required|string|max:100',
             'lantai'       => 'nullable|string|max:20',
-            'keterangan'   => 'nullable|string',
+            'keterangan'   => 'nullable|string|max:1000',
         ]);
 
         $ruangan->update($validated);

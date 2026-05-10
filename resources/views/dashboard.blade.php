@@ -361,7 +361,6 @@
                 <a href="{{ route('qrcode.scanner') }}" class="quick-link" style="--ql-bg:rgba(6,182,212,.1);--ql-color:#0e7490;">
                     <i class="fas fa-qrcode"></i> QR Scanner
                 </a>
-                @if(auth()->user()->isAdmin())
                 <a href="{{ route('export.aset.excel') }}" class="quick-link" style="--ql-bg:rgba(16,185,129,.1);--ql-color:#059669;">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </a>
@@ -377,30 +376,37 @@
                         <span class="ms-auto badge bg-warning text-dark" style="font-size:10px;">{{ $maintCount }}</span>
                     @endif
                 </a>
-                @else
-                <a href="{{ route('maintenance.index') }}" class="quick-link" style="--ql-bg:rgba(245,158,11,.1);--ql-color:#d97706;">
-                    <i class="fas fa-tools"></i> Maintenance
-                </a>
-                <a href="{{ route('aset.index') }}" class="quick-link" style="--ql-bg:rgba(107,114,128,.1);--ql-color:#4b5563;">
-                    <i class="fas fa-list"></i> Daftar Aset
-                </a>
-                @endif
             </div>
         </div>
     </div>
 </div>
 
+{{-- Data chart di-pass via hidden element agar di-escape Blade (aman dari XSS) --}}
+<div id="chartData"
+    data-kondisi-labels="{{ e(json_encode($kondisiDistribusi->pluck('kondisi')->toArray())) }}"
+    data-kondisi-values="{{ e(json_encode($kondisiDistribusi->pluck('total')->toArray())) }}"
+    data-kategori-labels="{{ e(json_encode($kategoriDistribusi->pluck('kategori')->toArray())) }}"
+    data-kategori-values="{{ e(json_encode($kategoriDistribusi->pluck('total')->toArray())) }}"
+    style="display:none;">
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const cd = document.getElementById('chartData');
+    const kondisiLabels = JSON.parse(cd.dataset.kondisiLabels);
+    const kondisiValues = JSON.parse(cd.dataset.kondisiValues);
+    const kategoriLabels = JSON.parse(cd.dataset.kategoriLabels);
+    const kategoriValues = JSON.parse(cd.dataset.kategoriValues);
+
     // Kondisi Chart
     const ctxK = document.getElementById('kondisiChart').getContext('2d');
     new Chart(ctxK, {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode($kondisiDistribusi->pluck('kondisi')->toArray()) !!},
+            labels: kondisiLabels,
             datasets: [{
-                data: {!! json_encode($kondisiDistribusi->pluck('total')->toArray()) !!},
+                data: kondisiValues,
                 backgroundColor: ['#10B981','#F59E0B','#EF4444','#94A3B8','#6366F1'],
                 borderWidth: 0, hoverOffset: 6
             }]
@@ -420,9 +426,9 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(ctxKat, {
         type: 'bar',
         data: {
-            labels: {!! json_encode($kategoriDistribusi->pluck('kategori')->toArray()) !!},
+            labels: kategoriLabels,
             datasets: [{
-                data: {!! json_encode($kategoriDistribusi->pluck('total')->toArray()) !!},
+                data: kategoriValues,
                 backgroundColor: ['rgba(59,130,246,.75)','rgba(16,185,129,.75)','rgba(245,158,11,.75)','rgba(239,68,68,.75)','rgba(139,92,246,.75)'],
                 borderRadius: 8, maxBarThickness: 48,
                 hoverBackgroundColor: ['rgba(59,130,246,1)','rgba(16,185,129,1)','rgba(245,158,11,1)','rgba(239,68,68,1)','rgba(139,92,246,1)']

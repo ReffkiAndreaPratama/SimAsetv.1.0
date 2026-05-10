@@ -75,8 +75,8 @@ class AssetController extends Controller
             'kondisi'       => 'required|in:Baik,Rusak Ringan,Rusak Berat',
             'status'        => 'required|in:Aktif,Maintenance,Non-Aktif',
             'serial_number' => 'nullable|string|max:100|unique:aset,serial_number',
-            'harga'         => 'nullable|numeric|min:0',
-            'keterangan'    => 'nullable|string',
+            'harga'         => 'nullable|numeric|min:0|max:999999999999',
+            'keterangan'    => 'nullable|string|max:1000',
             'foto'          => 'nullable|image|mimes:jpeg,png,gif|max:2048',
         ]);
 
@@ -86,7 +86,9 @@ class AssetController extends Controller
         if ($request->hasFile('foto')) {
             $fotoDir = public_path('foto_aset');
             if (!file_exists($fotoDir)) mkdir($fotoDir, 0755, true);
-            $fotoName = $kode_aset . '_' . time() . '.' . $request->file('foto')->getClientOriginalExtension();
+            // Gunakan ekstensi dari MIME type (bukan dari nama file asli) untuk mencegah path traversal
+            $ext      = $request->file('foto')->extension(); // deteksi dari MIME, bukan nama file
+            $fotoName = $kode_aset . '_' . time() . '.' . $ext;
             $request->file('foto')->move($fotoDir, $fotoName);
         }
 
@@ -143,8 +145,8 @@ class AssetController extends Controller
             'kondisi'       => 'required|in:Baik,Rusak Ringan,Rusak Berat',
             'status'        => 'required|in:Aktif,Maintenance,Non-Aktif',
             'serial_number' => 'nullable|string|max:100|unique:aset,serial_number,' . $asset->kode_aset . ',kode_aset',
-            'harga'         => 'nullable|numeric|min:0',
-            'keterangan'    => 'nullable|string',
+            'harga'         => 'nullable|numeric|min:0|max:999999999999',
+            'keterangan'    => 'nullable|string|max:1000',
             'foto'          => 'nullable|image|mimes:jpeg,png,gif|max:2048',
         ]);
 
@@ -174,7 +176,9 @@ class AssetController extends Controller
             }
             $fotoDir = public_path('foto_aset');
             if (!file_exists($fotoDir)) mkdir($fotoDir, 0755, true);
-            $fotoName = $kode_aset . '_' . time() . '.' . $request->file('foto')->getClientOriginalExtension();
+            // Gunakan ekstensi dari MIME type (bukan dari nama file asli) untuk mencegah path traversal
+            $ext      = $request->file('foto')->extension();
+            $fotoName = $kode_aset . '_' . time() . '.' . $ext;
             $request->file('foto')->move($fotoDir, $fotoName);
             $data['foto'] = $fotoName;
         }
@@ -215,6 +219,11 @@ class AssetController extends Controller
 
     public function batchDestroy(Request $request)
     {
+        $request->validate([
+            'kodes'   => 'required|array|max:100',
+            'kodes.*' => 'required|string|max:20',
+        ]);
+
         $kodes = $request->input('kodes', []);
         $count = 0;
 

@@ -40,9 +40,12 @@ Route::get('/', function () {
 | AUTHENTICATED ROUTES
 |
 | Pembagian role:
-|   Semua login  → seluruh fitur operasional (aset, barang, ruangan, QR,
-|                  maintenance, import, export, laporan, dashboard)
-|   role:admin   → tambahan: kelola pengguna & audit log
+|   Semua login (admin & staff) → full akses operasional:
+|     dashboard, aset (CRUD + hapus + batch), barang (CRUD + hapus),
+|     ruangan (CRUD + hapus), QR, maintenance, import, export, laporan
+|
+|   role:admin saja → administrasi sistem:
+|     kelola pengguna & audit log
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
@@ -61,7 +64,7 @@ Route::middleware(['auth'])->group(function () {
     // DASHBOARD
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // KELOLA ASET
+    // KELOLA ASET — semua role (CRUD + hapus + batch)
     Route::get('/aset/check-new',        [AssetController::class, 'checkNew'])->name('aset.check-new');
     Route::post('/aset/batch-destroy',   [AssetController::class, 'batchDestroy'])->name('aset.batch-destroy');
     Route::resource('aset', AssetController::class)->parameters(['aset' => 'kode_aset']);
@@ -69,10 +72,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/aset/{kode_aset}/qr',           [AssetController::class, 'showQr'])->name('aset.showQr');
     Route::get('/aset/{kode_aset}/detail',        [AssetController::class, 'detail'])->name('assets.detail');
 
-    // KELOLA BARANG
+    // KELOLA BARANG — semua role
     Route::resource('barang', BarangController::class);
 
-    // KELOLA RUANGAN
+    // KELOLA RUANGAN — semua role
     Route::resource('ruangan', RuanganController::class);
 
     // QR CODE
@@ -86,23 +89,21 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/maintenance/{kode_aset}/set',       [MaintenanceController::class, 'setMaintenance'])->name('maintenance.set');
     Route::patch('/maintenance/{kode_aset}/complete', [MaintenanceController::class, 'complete'])->name('maintenance.complete');
 
-    // IMPORT — hanya store dan template (tidak ada halaman terpisah)
+    // IMPORT — semua role
     Route::post('/import',         [ImportController::class, 'store'])->name('import.store');
     Route::get('/import/template', [ImportController::class, 'template'])->name('import.template');
 
-    // EXPORT — langsung download, tidak ada halaman index terpisah
-    Route::get('/export/aset/excel',   [ExportController::class, 'excelAset'])->name('export.aset.excel');
-    Route::get('/export/aset/pdf',     [ExportController::class, 'pdfAset'])->name('export.aset.pdf');
-    Route::get('/export/barang/excel', [ExportController::class, 'excelBarang'])->name('export.barang.excel');
-    Route::get('/export/barang/pdf',   [ExportController::class, 'pdfBarang'])->name('export.barang.pdf');
-
-    // LAPORAN — laporan per ruangan dan maintenance
-    Route::get('/laporan',                 [LaporanController::class, 'index'])->name('laporan.index');
-    Route::get('/laporan/assets/cetak',    [LaporanController::class, 'cetakAset'])->name('laporan.aset.cetak');
-    Route::get('/laporan/assets/export',   [LaporanController::class, 'exportAset'])->name('laporan.aset.export');
+    // EXPORT & LAPORAN — semua role
+    Route::get('/export/aset/excel',              [ExportController::class, 'excelAset'])->name('export.aset.excel');
+    Route::get('/export/aset/pdf',                [ExportController::class, 'pdfAset'])->name('export.aset.pdf');
+    Route::get('/export/barang/excel',            [ExportController::class, 'excelBarang'])->name('export.barang.excel');
+    Route::get('/export/barang/pdf',              [ExportController::class, 'pdfBarang'])->name('export.barang.pdf');
+    Route::get('/laporan',                        [LaporanController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/assets/cetak',           [LaporanController::class, 'cetakAset'])->name('laporan.aset.cetak');
+    Route::get('/laporan/assets/export',          [LaporanController::class, 'exportAset'])->name('laporan.aset.export');
     Route::get('/laporan/ruangan/{kode_ruangan}', [LaporanController::class, 'laporanRuangan'])->name('laporan.ruangan');
-    Route::get('/laporan/maintenance/pdf', [LaporanController::class, 'exportMaintenancePdf'])->name('laporan.maintenance.pdf');
-    Route::get('/laporan/maintenance/csv', [LaporanController::class, 'exportMaintenanceCsv'])->name('laporan.maintenance.csv');
+    Route::get('/laporan/maintenance/pdf',        [LaporanController::class, 'exportMaintenancePdf'])->name('laporan.maintenance.pdf');
+    Route::get('/laporan/maintenance/csv',        [LaporanController::class, 'exportMaintenanceCsv'])->name('laporan.maintenance.csv');
 
     /*
     |----------------------------------------------------------------------
