@@ -1,0 +1,92 @@
+@startuml Sequence_TambahAset_SimAset
+' ============================================================
+' SEQUENCE DIAGRAM — Tambah Aset Baru
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #2c3e50
+skinparam sequenceParticipantBackgroundColor #e8eaf6
+skinparam sequenceParticipantFontSize 11
+skinparam sequenceLifeLineBorderColor #2c3e50
+skinparam sequenceGroupBorderColor #1a3470
+skinparam sequenceGroupBackgroundColor #e3f2fd
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+skinparam sequenceActorBorderColor #1a3470
+skinparam sequenceActorBackgroundColor #bbdefb
+
+title <b>Sequence Diagram — Tambah Aset Baru</b>\nSimAset RBTV Bengkulu
+
+actor "Pengguna\n(Staff/Admin)" as User
+boundary ":Browser" as Browser
+control ":AssetController" as AssetCtrl
+entity ":Asset\n(Model)" as AssetModel
+entity ":Barang\n(Model)" as BarangModel
+entity ":Ruangan\n(Model)" as RuanganModel
+entity ":ActivityLogger\n(Helper)" as Logger
+database ":Database\n(MySQL)" as DB
+entity ":FileSystem\n(public/foto_aset)" as FS
+
+== Buka Form Tambah Aset ==
+
+User -> Browser : Klik "+ Tambah Aset"
+Browser -> AssetCtrl : GET /aset/create
+AssetCtrl -> BarangModel : Barang::where('status','aktif')\n->orderBy('nama_barang')\n->get(['kode_barang','nama_barang','kategori'])
+BarangModel -> DB : SELECT kode_barang, nama_barang, kategori\nFROM barang\nWHERE status = 'aktif'\nORDER BY nama_barang
+DB --> BarangModel : [BRG-001 Kamera Sony A7, BRG-002 Mic Wireless Rode, ...]
+BarangModel --> AssetCtrl : Collection $barangs
+
+AssetCtrl -> RuanganModel : Ruangan::orderBy('nama')->get()
+RuanganModel -> DB : SELECT * FROM ruangan ORDER BY nama
+DB --> RuanganModel : [Studio 1, Studio 2, Ruang Editing, Ruang Redaksi]
+RuanganModel --> AssetCtrl : Collection $ruangans
+
+AssetCtrl --> Browser : view('aset.create', compact('barangs','ruangans'))
+Browser --> User : Form tambah aset ditampilkan\n(4 section card + dropdown terisi)
+
+== Submit Form Tambah Aset ==
+
+User -> Browser : Isi form dan klik "Simpan Aset"
+Browser -> AssetCtrl : POST /aset\n{kode_barang, ruangan_id, kondisi,\nstatus, tanggal_perolehan, serial_number,\njumlah, harga_perolehan, sumber_perolehan,\nketerangan, foto?}
+
+AssetCtrl -> AssetCtrl : $request->validate([\n  'kode_barang' => 'required|exists:barang,kode_barang',\n  'ruangan_id' => 'required|exists:ruangan,id',\n  'kondisi' => 'required|in:Baik,Rusak Ringan,Rusak Berat',\n  'tanggal_perolehan' => 'required|date',\n  'status' => 'required|in:Aktif,Maintenance,Non-Aktif',\n  'serial_number' => 'nullable|unique:aset,serial_number',\n  ...\n])
+
+alt Validasi gagal
+  AssetCtrl --> Browser : Redirect back()\n->withErrors($errors)\n->withInput()
+  Browser --> User : Form ditampilkan ulang\ndengan pesan error per field
+else Validasi berhasil
+end
+
+AssetCtrl -> AssetModel : Asset::generateKode()
+note right of AssetModel
+  Gap-filling algorithm:
+  1. Ambil semua kode_aset (termasuk soft-deleted)
+  2. Extract nomor: AST-001 → 1, AST-002 → 2
+  3. Cari nomor terkecil yang belum dipakai
+  4. Return: AST-001, AST-002, AST-004 (jika AST-003 deleted)
+end note
+AssetModel -> DB : SELECT kode_aset FROM aset\nWITH TRASHED\nORDER BY kode_aset
+DB --> AssetModel : ['AST-001', 'AST-002']
+AssetModel --> AssetCtrl : 'AST-003' (kode baru)
+
+alt Ada file foto diupload
+  AssetCtrl -> FS : $foto->move(\n  public_path('foto_aset'),\n  '{timestamp}_{nama_file}'\n)
+  FS --> AssetCtrl : Nama file tersimpan
+else Tidak ada foto
+end
+
+AssetCtrl -> AssetModel : Asset::create([\n  'kode_aset' => 'AST-003',\n  'kode_barang' => 'BRG-001',\n  'ruangan_id' => 3,\n  'kondisi' => 'Baik',\n  'status' => 'Aktif',\n  'jumlah' => 1,\n  'tanggal_perolehan' => '2026-05-07',\n  'created_by' => auth()->id(),\n  ...\n])
+AssetModel -> DB : INSERT INTO aset\n(kode_aset, kode_barang, ruangan_id,\nkondisi, status, jumlah,\ntanggal_perolehan, created_by,\ncreated_at, updated_at)\nVALUES (...)
+DB --> AssetModel : Aset record tersimpan
+AssetModel --> AssetCtrl : Asset $asset
+
+AssetCtrl -> Logger : ActivityLogger::logAsset(\n  'Create',\n  'Menambahkan aset baru: Kamera Sony A7 (AST-003)',\n  $asset\n)
+Logger -> DB : INSERT INTO log_aktivitas\n(user_id, aktivitas, keterangan,\nip_address, user_agent, created_at)\nVALUES (...)
+DB --> Logger : OK
+Logger --> AssetCtrl : ActivityLog record
+
+AssetCtrl --> Browser : redirect()->route('aset.index')\n->with('success', 'Aset berhasil ditambahkan. Kode: AST-003')
+Browser --> User : Halaman daftar aset\ndengan notifikasi sukses
+
+@enduml

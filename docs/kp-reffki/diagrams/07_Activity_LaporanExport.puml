@@ -1,0 +1,165 @@
+@startuml Activity_LaporanExport_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — Laporan & Export Data
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — Laporan & Export Data</b>\nSimAset RBTV Bengkulu
+
+|Pengguna|
+start
+
+:Login ke sistem;
+
+:Pilih menu "Laporan & Export"\ndari sidebar;
+
+|Sistem|
+:Tampilkan halaman index laporan\n(daftar ruangan dengan jumlah aset);
+
+|Pengguna|
+:Pilih jenis laporan;
+
+fork
+  ' ── LAPORAN ASET ─────────────────────────────────────
+  note right
+    <b>ALUR A: Laporan Aset</b>
+  end note
+
+  :Klik "Laporan Aset";
+
+  |Sistem|
+  :Tampilkan halaman laporan aset\ndengan form filter;
+
+  |Pengguna|
+  :Atur filter (opsional):\n- Kata kunci pencarian\n- Ruangan\n- Kondisi\n- Status;
+
+  :Klik "Tampilkan";
+
+  |Sistem|
+  :Query aset dengan filter\nyang dipilih;
+  :Tampilkan tabel hasil laporan;
+
+  |Pengguna|
+  :Pilih format output;
+
+  fork
+    :Klik "Cetak PDF";
+
+    |Sistem|
+    :GET /laporan/assets/cetak\n(dengan query filter);
+    :Generate PDF menggunakan\nBarryvdh DomPDF;
+    :Tampilkan PDF di browser\n(inline view);
+
+  fork again
+    :Klik "Export Excel";
+
+    |Sistem|
+    :GET /laporan/assets/export\n(dengan query filter);
+    :Generate Excel menggunakan\nMaatwebsite Excel;
+    :Download file .xlsx;
+
+  end fork
+
+fork again
+  ' ── LAPORAN PER RUANGAN ──────────────────────────────
+  note right
+    <b>ALUR B: Laporan Per Ruangan</b>
+  end note
+
+  :Klik nama ruangan\npada daftar laporan;
+
+  |Sistem|
+  :GET /laporan/ruangan/{id};
+  :Query semua aset\ndi ruangan tersebut;
+  :Tampilkan laporan aset\nper ruangan;
+
+  |Pengguna|
+  :Melihat laporan aset\ndi ruangan yang dipilih;
+
+fork again
+  ' ── LAPORAN MAINTENANCE ──────────────────────────────
+  note right
+    <b>ALUR C: Laporan Maintenance</b>
+  end note
+
+  :Klik "Laporan Maintenance";
+
+  |Pengguna|
+  :Pilih format;
+
+  fork
+    :Klik "Download PDF";
+
+    |Sistem|
+    :GET /laporan/maintenance/pdf;
+    :Query aset dengan\nstatus = 'Maintenance';
+    :Generate PDF laporan maintenance;
+    :Download file PDF;
+
+  fork again
+    :Klik "Download CSV";
+
+    |Sistem|
+    :GET /laporan/maintenance/csv;
+    :Query aset maintenance;
+    :Generate file CSV;
+    :Download file CSV;
+
+  end fork
+
+fork again
+  ' ── EXPORT LANGSUNG ──────────────────────────────────
+  note right
+    <b>ALUR D: Export Langsung dari Halaman Aset</b>
+  end note
+
+  :Buka halaman Daftar Aset;
+  :Klik tombol "Export";
+
+  |Sistem|
+  :Tampilkan halaman export\ndengan pilihan filter;
+
+  |Pengguna|
+  :Atur filter export\n(status, kondisi, ruangan, tanggal);
+
+  :Pilih format;
+
+  fork
+    :Klik "Export Excel";
+
+    |Sistem|
+    :GET /export/aset/excel\n(dengan filter);
+    :AssetExportFile::query()\ndengan filter;
+    :Excel::download()\nfilename: aset_{tanggal}.xlsx;
+    :Download file Excel;
+
+  fork again
+    :Klik "Export PDF";
+
+    |Sistem|
+    :GET /export/aset/pdf\n(dengan filter);
+    :Query aset dengan filter;
+    :Pdf::loadView()->download();
+    :Download file PDF;
+
+  end fork
+
+end fork
+
+|Pengguna|
+:Laporan/file berhasil\nditampilkan atau diunduh;
+
+stop
+
+@enduml

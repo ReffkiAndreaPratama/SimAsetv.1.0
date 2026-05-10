@@ -1,0 +1,118 @@
+@startuml Activity_QRCode_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — QR Code (Generate & Scan)
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — QR Code (Generate & Scan)</b>\nSimAset RBTV Bengkulu
+
+|Pengguna|
+start
+
+fork
+  ' ── GENERATE QR CODE ─────────────────────────────────
+  note right
+    <b>ALUR A: Generate QR Code</b>
+  end note
+
+  :Buka halaman Detail Aset\natau Daftar Aset;
+
+  :Klik "Generate QR Code"\npada aset yang dipilih;
+
+  |Sistem|
+  :Cek apakah file QR sudah ada\ndi public/qr_codes/qr_{kode}*.png;
+
+  if (File QR\nsudah ada?) then (Ya)
+    :Redirect back dengan\npesan info "QR Code sudah ada";
+  else (Tidak)
+  endif
+
+  :Buat URL detail aset:\nroute('assets.detail', kode_aset);
+
+  :Request ke API eksternal:\nhttps://api.qrserver.com/v1/create-qr-code/\n?size=300x300&format=png\n&data={url_encoded};
+
+  if (Request API\nberhasil?) then (Tidak)
+    :Redirect back dengan\npesan error "Gagal generate QR Code";
+  else (Ya)
+  endif
+
+  :Simpan file PNG ke\npublic/qr_codes/qr_{kode}_{timestamp}.png;
+
+  :Redirect back dengan\nflash success;
+
+  |Pengguna|
+  :QR Code berhasil di-generate;
+
+fork again
+  ' ── SCAN QR CODE ─────────────────────────────────────
+  note right
+    <b>ALUR B: Scan QR Code</b>
+  end note
+
+  :Buka menu "QR Scanner"\ndari sidebar;
+
+  |Sistem|
+  :Tampilkan halaman scanner\n(akses kamera browser);
+
+  |Pengguna|
+  :Izinkan akses kamera;
+
+  :Arahkan kamera ke\nQR Code pada aset fisik;
+
+  |Sistem|
+  :Decode QR Code\n(baca URL dari QR);
+
+  :Parse kode_aset\ndari URL;
+
+  :GET /aset/{kode_aset}/detail\n(route: assets.detail);
+
+  :Asset::with(['barang','ruangan','creator'])\n  ->where('kode_aset', $kode)\n  ->firstOrFail();
+
+  if (Aset\nditemukan?) then (Tidak)
+    :Tampilkan halaman 404\n"Aset tidak ditemukan";
+  else (Ya)
+  endif
+
+  :Tampilkan halaman detail aset:\n- Kode Aset\n- Nama Barang\n- Kategori\n- Ruangan\n- Kondisi\n- Status\n- Serial Number\n- Tanggal Perolehan\n- Foto Aset;
+
+  |Pengguna|
+  :Melihat informasi lengkap\naset yang di-scan;
+
+fork again
+  ' ── BATCH PRINT QR ───────────────────────────────────
+  note right
+    <b>ALUR C: Cetak QR Code Massal</b>
+  end note
+
+  :Pilih beberapa aset\ndengan checkbox di daftar aset;
+
+  :Klik "Cetak QR" pada\nbulk action bar;
+
+  |Sistem|
+  :GET /qrcode/batch-print\n?asset_ids=AST-001,AST-002,...;
+
+  :Load semua aset yang dipilih\nbeserta data QR Code;
+
+  :Generate QR Code untuk\naset yang belum punya QR;
+
+  :Tampilkan halaman\nbatch print QR Code;
+
+  |Pengguna|
+  :Klik "Print" di browser\nuntuk mencetak;
+
+end fork
+
+stop
+
+@enduml

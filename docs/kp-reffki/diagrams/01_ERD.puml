@@ -1,0 +1,251 @@
+@startuml ERD_SimAset_RBTV
+' ============================================================
+' ERD — Sistem Informasi Manajemen Aset (SimAset) RBTV Bengkulu
+' Berdasarkan SQL Dump aktual: simset_rbtv (phpMyAdmin 5.2.3)
+' Server: MySQL 8.0.30 | PHP 8.5.2
+' Notasi: Crow's Foot (UML Entity style)
+' ============================================================
+
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam classBorderColor #2c3e50
+skinparam classFontSize 11
+skinparam classHeaderBackgroundColor #1a3470
+skinparam classHeaderFontColor white
+skinparam classBackgroundColor #f8f9fa
+skinparam ArrowColor #2c3e50
+skinparam ArrowThickness 1.5
+skinparam NoteBackgroundColor #fffde7
+skinparam NoteBorderColor #f9a825
+
+title <b>Entity Relationship Diagram (ERD)</b>\nSistem Informasi Manajemen Aset — SimAset RBTV Bengkulu\n<size:10>Database: simset_rbtv | MySQL 8.0.30</size>
+
+' ============================================================
+' ENTITAS UTAMA (Core Application Tables)
+' ============================================================
+
+entity "**users**" as users {
+  * <u>id</u> : INT <<PK, AUTO_INCREMENT>>
+  --
+  * name : VARCHAR(100) <<NOT NULL>>
+  * email : VARCHAR(100) <<UNIQUE, NOT NULL>>
+  * password : VARCHAR(255) <<NOT NULL, bcrypt hash>>
+  * role : ENUM('admin','staff') <<DEFAULT 'staff'>>
+  * is_active : TINYINT(1) <<NOT NULL, DEFAULT 1>>
+  last_login_at : TIMESTAMP <<NULL>>
+  created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+  updated_at : TIMESTAMP <<NULL>>
+  --
+  <i>Data aktual:</i>
+  <i>id=2: Staff RBTV (staff)</i>
+  <i>id=3: Admin Magang (admin)</i>
+  <i>id=4: reffki (staff)</i>
+}
+
+entity "**barang**" as barang {
+  * <u>kode_barang</u> : VARCHAR(20) <<PK, Format: BRG-001>>
+  --
+  * nama_barang : VARCHAR(150) <<NOT NULL>>
+  * kategori : ENUM('Kamera','Audio','Komputer',\n'Lighting','Furniture',\n'Peralatan Kantor') <<NOT NULL>>
+  * status : ENUM('aktif','nonaktif') <<DEFAULT 'aktif'>>
+  keterangan : TEXT <<NULL>>
+  created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+  updated_at : TIMESTAMP <<NULL ON UPDATE CURRENT_TIMESTAMP>>
+  deleted_at : TIMESTAMP <<NULL — Soft Delete>>
+  --
+  <i>Data aktual:</i>
+  <i>BRG-001: Kamera Sony A7 (Kamera)</i>
+  <i>BRG-002: Mic Wireless Rode (Audio)</i>
+  <i>BRG-003: printer epson l200 (deleted)</i>
+}
+
+entity "**ruangan**" as ruangan {
+  * <u>id</u> : INT <<PK, AUTO_INCREMENT>>
+  --
+  * nama : VARCHAR(100) <<NOT NULL>>
+  lantai : VARCHAR(50) <<NULL>>
+  keterangan : TEXT <<NULL>>
+  created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+  --
+  <i>Data aktual:</i>
+  <i>id=1: Studio 1 (Lantai 1)</i>
+  <i>id=2: Studio 2 (Lantai 2)</i>
+  <i>id=3: Ruang Editing (Lantai 1)</i>
+  <i>id=4: Ruang Redaksi (Lantai 5)</i>
+}
+
+entity "**aset**" as aset {
+  * <u>kode_aset</u> : VARCHAR(20) <<PK, Format: AST-001>>
+  --
+  * kode_barang : VARCHAR(20) <<FK → barang.kode_barang, NOT NULL>>
+  ruangan_id : INT <<FK → ruangan.id, NULL>>
+  kondisi : ENUM('Baik','Rusak Ringan','Rusak Berat') <<DEFAULT 'Baik'>>
+  status : ENUM('Aktif','Maintenance','Non-Aktif') <<DEFAULT 'Aktif'>>
+  serial_number : VARCHAR(100) <<NULL>>
+  foto : VARCHAR(255) <<NULL>>
+  jumlah : INT <<DEFAULT 1>>
+  tanggal_perolehan : DATE <<NULL>>
+  harga_perolehan : DECIMAL(15,2) <<NULL>>
+  sumber_perolehan : VARCHAR(255) <<NULL>>
+  keterangan : TEXT <<NULL>>
+  created_by : INT <<NULL — ref users.id>>
+  updated_by : INT <<NULL — ref users.id>>
+  created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+  updated_at : TIMESTAMP <<NULL ON UPDATE CURRENT_TIMESTAMP>>
+  deleted_at : TIMESTAMP <<NULL — Soft Delete>>
+  --
+  <i>Data aktual:</i>
+  <i>AST-001: BRG-001, Ruang Editing, Maintenance</i>
+  <i>AST-002: BRG-001, Ruang Editing, Aktif</i>
+  <i>AST-003: BRG-003, Ruang Redaksi (soft-deleted)</i>
+}
+
+entity "**log_aktivitas**" as log_aktivitas {
+  * <u>id</u> : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  user_id : BIGINT UNSIGNED <<NULL — ref users.id>>
+  * aktivitas : VARCHAR(255) <<NOT NULL>>
+  keterangan : TEXT <<NULL>>
+  ip_address : VARCHAR(45) <<NULL>>
+  user_agent : TEXT <<NULL>>
+  created_at : TIMESTAMP <<NULL>>
+  updated_at : TIMESTAMP <<NULL>>
+  --
+  <i>Nilai aktivitas: Login, Logout,</i>
+  <i>Create, Update, Delete</i>
+  <i>Total: 39 record (35 Login, 2 Create,</i>
+  <i>2 Update, 1 Delete)</i>
+}
+
+' ============================================================
+' ENTITAS PENDUKUNG (Laravel Framework Tables)
+' ============================================================
+
+entity "**sessions**" as sessions {
+  * <u>id</u> : VARCHAR(255) <<PK>>
+  --
+  user_id : BIGINT UNSIGNED <<NULL — ref users.id>>
+  ip_address : VARCHAR(45) <<NULL>>
+  user_agent : TEXT <<NULL>>
+  * payload : LONGTEXT <<NOT NULL>>
+  * last_activity : INT <<NOT NULL>>
+}
+
+entity "**password_reset_tokens**" as pwd_reset {
+  * <u>email</u> : VARCHAR(255) <<PK>>
+  --
+  * token : VARCHAR(255) <<NOT NULL, bcrypt hash>>
+  created_at : TIMESTAMP <<NULL>>
+}
+
+entity "**cache**" as cache {
+  * <u>key</u> : VARCHAR(255) <<PK>>
+  --
+  * value : MEDIUMTEXT <<NOT NULL>>
+  * expiration : INT <<NOT NULL>>
+}
+
+entity "**cache_locks**" as cache_locks {
+  * <u>key</u> : VARCHAR(255) <<PK>>
+  --
+  * owner : VARCHAR(255) <<NOT NULL>>
+  * expiration : INT <<NOT NULL>>
+}
+
+entity "**migrations**" as migrations {
+  * <u>id</u> : INT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * migration : VARCHAR(255) <<NOT NULL>>
+  * batch : INT <<NOT NULL>>
+}
+
+' ============================================================
+' RELASI — BERDASARKAN FK CONSTRAINTS AKTUAL
+' ============================================================
+
+' ── FK CONSTRAINTS AKTUAL (dari ALTER TABLE di SQL dump) ──
+
+' fk_aset_barang: ON DELETE RESTRICT ON UPDATE CASCADE
+barang ||--o{ aset : "memiliki\n(kode_barang)\nRESTRICT del\nCASCADE upd"
+
+' fk_aset_ruangan: ON DELETE SET NULL ON UPDATE CASCADE
+ruangan ||--o{ aset : "menampung\n(ruangan_id)\nSET NULL del\nCASCADE upd"
+
+' ── RELASI IMPLISIT (tidak ada FK constraint di DB, hanya referensi logis) ──
+
+' created_by dan updated_by di aset merujuk ke users
+' (tidak ada FK constraint di SQL dump aktual)
+users ||--o{ aset : "membuat\n(created_by)\n[no FK constraint]"
+users ||--o{ aset : "memperbarui\n(updated_by)\n[no FK constraint]"
+
+' user_id di log_aktivitas merujuk ke users
+' (tidak ada FK constraint di SQL dump aktual)
+users ||--o{ log_aktivitas : "melakukan\naktivitas\n(user_id)\n[no FK constraint]"
+
+' ── RELASI FRAMEWORK ──
+
+' sessions.user_id → users.id (index, no FK)
+users ||--o{ sessions : "memiliki\nsesi\n(user_id)"
+
+' password_reset_tokens.email → users.email (logis)
+users ||--o{ pwd_reset : "reset\npassword\n(email)"
+
+' ============================================================
+' INDEKS AKTUAL (dari SQL dump)
+' ============================================================
+
+note bottom of aset
+  <b>INDEX aktual pada tabel aset:</b>
+  PRIMARY KEY (kode_aset)
+  KEY idx_kode_barang (kode_barang)
+  KEY idx_ruangan_id (ruangan_id)
+  KEY idx_status (status)
+  
+  <b>FK Constraints aktual:</b>
+  fk_aset_barang: kode_barang → barang(kode_barang)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+  fk_aset_ruangan: ruangan_id → ruangan(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+  
+  <b>Soft Delete:</b> deleted_at diisi saat hapus,
+  data tetap ada di tabel.
+  
+  <b>Kode auto-generate (gap-filling):</b>
+  AST-001, AST-002, AST-003(deleted) → next: AST-003
+end note
+
+note bottom of barang
+  <b>Soft Delete aktif.</b>
+  Kode auto-generate: BRG-001, BRG-002, ...
+  
+  <b>Kategori valid:</b>
+  Kamera | Audio | Komputer |
+  Lighting | Furniture | Peralatan Kantor
+  
+  <b>Tidak ada FK constraint</b>
+  yang merujuk ke tabel ini
+  selain dari aset.kode_barang
+end note
+
+note right of log_aktivitas
+  <b>Tidak ada FK constraint</b>
+  di SQL dump aktual.
+  user_id hanya referensi logis.
+  
+  Jika user dihapus, log tetap ada
+  (user_id menjadi orphan).
+end note
+
+note right of sessions
+  Dikelola otomatis oleh
+  Laravel Session driver.
+  Tidak ada FK constraint.
+end note
+
+note bottom of pwd_reset
+  Digunakan untuk fitur
+  "Lupa Password".
+  Token di-hash dengan bcrypt.
+end note
+
+@enduml

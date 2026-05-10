@@ -1,0 +1,95 @@
+@startuml Sequence_ScanQR_SimAset
+' ============================================================
+' SEQUENCE DIAGRAM — Scan QR Code & Tampilkan Detail Aset
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #2c3e50
+skinparam sequenceParticipantBackgroundColor #e8eaf6
+skinparam sequenceParticipantFontSize 11
+skinparam sequenceLifeLineBorderColor #2c3e50
+skinparam sequenceGroupBorderColor #1a3470
+skinparam sequenceGroupBackgroundColor #e3f2fd
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+skinparam sequenceActorBorderColor #1a3470
+skinparam sequenceActorBackgroundColor #bbdefb
+
+title <b>Sequence Diagram — Scan QR Code & Tampilkan Detail Aset</b>\nSimAset RBTV Bengkulu
+
+actor "Pengguna" as User
+boundary ":Browser\n(Smartphone/PC)" as Browser
+control ":QrCodeController" as QrCtrl
+control ":AssetController" as AssetCtrl
+entity ":Asset\n(Model)" as AssetModel
+database ":Database\n(MySQL)" as DB
+boundary ":qrserver.com\n(API Eksternal)" as QrAPI
+entity ":FileSystem\n(public/qr_codes)" as FS
+
+== Generate QR Code (Sebelum Scan) ==
+
+User -> Browser : Buka detail aset AST-001\nKlik "Generate QR Code"
+Browser -> AssetCtrl : POST /aset/AST-001/generate-qr
+
+AssetCtrl -> AssetModel : Asset::where('kode_aset','AST-001')->firstOrFail()
+AssetModel -> DB : SELECT * FROM aset WHERE kode_aset = 'AST-001'
+DB --> AssetModel : Asset record
+AssetModel --> AssetCtrl : $asset
+
+AssetCtrl -> FS : glob(public_path('qr_codes') . '/qr_AST-001*.png')
+FS --> AssetCtrl : [] (belum ada file)
+
+AssetCtrl -> AssetCtrl : $qrData = route('assets.detail', 'AST-001')\n= 'http://localhost/aset/AST-001/detail'
+
+AssetCtrl -> QrAPI : GET https://api.qrserver.com/v1/create-qr-code/\n?size=300x300&format=png\n&data=http%3A%2F%2Flocalhost%2Faset%2FAST-001%2Fdetail
+
+alt API request berhasil
+  QrAPI --> AssetCtrl : PNG binary data (300x300)
+  AssetCtrl -> FS : file_put_contents(\n  'public/qr_codes/qr_AST-001_{timestamp}.png',\n  $qrImage\n)
+  FS --> AssetCtrl : File tersimpan
+  AssetCtrl --> Browser : redirect()->back()\n->with('success', 'QR Code berhasil di-generate')
+  Browser --> User : Notifikasi sukses
+else API request gagal
+  QrAPI --> AssetCtrl : false (timeout/error)
+  AssetCtrl --> Browser : redirect()->back()\n->with('error', 'Gagal generate QR Code')
+  Browser --> User : Pesan error
+end
+
+== Scan QR Code ==
+
+User -> Browser : Buka menu "QR Scanner"
+Browser -> QrCtrl : GET /qrcode/scanner
+QrCtrl --> Browser : view('qrcode.scanner')\n[halaman dengan akses kamera]
+Browser --> User : Halaman scanner ditampilkan\n(kamera aktif)
+
+User -> Browser : Arahkan kamera ke\nQR Code pada aset fisik
+Browser -> Browser : Decode QR Code\n(JavaScript QR decoder)\nHasil: 'http://localhost/aset/AST-001/detail'
+
+Browser -> AssetCtrl : GET /aset/AST-001/detail\n(redirect otomatis dari QR URL)
+
+AssetCtrl -> AssetModel : Asset::with(['barang','ruangan','creator'])\n->where('kode_aset', 'AST-001')\n->firstOrFail()
+
+AssetModel -> DB : SELECT aset.*,\n  barang.nama_barang, barang.kategori,\n  ruangan.nama AS nama_ruangan,\n  users.name AS creator_name\nFROM aset\nLEFT JOIN barang ON aset.kode_barang = barang.kode_barang\nLEFT JOIN ruangan ON aset.ruangan_id = ruangan.id\nLEFT JOIN users ON aset.created_by = users.id\nWHERE aset.kode_aset = 'AST-001'\nAND aset.deleted_at IS NULL
+
+DB --> AssetModel : {\n  kode_aset: 'AST-001',\n  nama_barang: 'Kamera Sony A7',\n  kategori: 'Kamera',\n  nama_ruangan: 'Ruang Editing',\n  kondisi: 'Baik',\n  status: 'Maintenance',\n  serial_number: 'ggG',\n  tanggal_perolehan: '2026-05-01',\n  creator_name: 'Admin Magang'\n}
+AssetModel --> AssetCtrl : $asset (dengan relasi)
+
+alt Aset tidak ditemukan (kode salah/sudah dihapus)
+  AssetModel --> AssetCtrl : ModelNotFoundException
+  AssetCtrl --> Browser : HTTP 404 Not Found
+  Browser --> User : Halaman "Aset tidak ditemukan"
+else Aset ditemukan
+end
+
+AssetCtrl --> Browser : view('aset.show', compact('asset'))
+Browser --> User : Detail aset ditampilkan:\n- Kode: AST-001\n- Nama: Kamera Sony A7\n- Kategori: Kamera\n- Ruangan: Ruang Editing\n- Kondisi: Baik\n- Status: Maintenance\n- Serial: ggG\n- Tgl Perolehan: 01 Mei 2026\n- Dibuat oleh: Admin Magang
+
+note right of User
+  Halaman detail dapat diakses
+  tanpa login (route publik)
+  sehingga siapapun yang scan
+  QR bisa melihat info aset
+end note
+
+@enduml

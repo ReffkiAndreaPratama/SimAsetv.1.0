@@ -1,0 +1,158 @@
+@startuml Activity_ManajemenAset_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — Manajemen Aset (CRUD)
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — Manajemen Aset (CRUD)</b>\nSimAset RBTV Bengkulu
+
+|Pengguna|
+start
+:Login ke sistem;
+
+:Pilih menu "Aset"\ndari sidebar navigasi;
+
+|Sistem|
+:Query aset dengan relasi\nbarang dan ruangan;
+:Tampilkan halaman daftar aset\n(tabel + stats + filter bar);
+
+|Pengguna|
+:Pilih aksi yang diinginkan;
+
+fork
+  ' ── TAMBAH ASET ──────────────────────────────────────
+  :Klik tombol "+ Tambah Aset";
+
+  |Sistem|
+  :Load dropdown Barang aktif\ndan daftar Ruangan;
+  :Tampilkan form tambah aset\n(4 section card);
+
+  |Pengguna|
+  :Isi form:\n- Pilih Barang (kode_barang)\n- Pilih Ruangan (ruangan_id)\n- Kondisi (Baik/Rusak Ringan/Rusak Berat)\n- Status (Aktif/Maintenance/Non-Aktif)\n- Tanggal Perolehan\n- Harga Perolehan (opsional)\n- Sumber Perolehan (opsional)\n- Serial Number (opsional)\n- Jumlah (default: 1)\n- Keterangan (opsional)\n- Foto (opsional);
+
+  :Klik "Simpan Aset";
+
+  |Sistem|
+  :Validasi server-side\n(required, exists, unique, dll);
+
+  if (Validasi\ngagal?) then (Ya)
+    :Redirect back\ndengan pesan error per field;
+    |Pengguna|
+    :Perbaiki input;
+    |Sistem|
+  else (Tidak)
+  endif
+
+  :Asset::generateKode()\n(gap-filling: cek kode yang ada,\ncari nomor terkecil yang belum dipakai);
+
+  if (Ada file foto\ndiupload?) then (Ya)
+    :Simpan foto ke\npublic/foto_aset/{timestamp}_{nama};
+  else (Tidak)
+  endif
+
+  :Asset::create($data)\ndengan created_by = auth()->id();
+
+  :ActivityLogger::logAsset(\n  'Create',\n  'Menambahkan aset baru: {nama} ({kode})'\n);
+
+  :Redirect ke /aset\ndengan flash success;
+
+fork again
+  ' ── EDIT ASET ────────────────────────────────────────
+  :Klik ikon Edit (✏)\npada baris aset;
+
+  |Sistem|
+  :Load data aset by kode_aset;
+  :Load dropdown Barang & Ruangan;
+  :Tampilkan form edit\ndengan data terisi;
+
+  |Pengguna|
+  :Ubah data yang diperlukan;
+  :Klik "Simpan Perubahan";
+
+  |Sistem|
+  :Validasi server-side;
+
+  if (Validasi\ngagal?) then (Ya)
+    :Redirect back dengan error;
+    |Pengguna|
+    :Perbaiki input;
+    |Sistem|
+  else (Tidak)
+  endif
+
+  if (Ada foto baru\ndiupload?) then (Ya)
+    :Hapus foto lama\n(jika ada);
+    :Simpan foto baru;
+  else (Tidak)
+  endif
+
+  if (Remove photo\ndicentang?) then (Ya)
+    :Hapus file foto dari disk;
+    :Set foto = null;
+  else (Tidak)
+  endif
+
+  :Asset::update($data)\ndengan updated_by = auth()->id();
+
+  :ActivityLogger::logAsset(\n  'Update',\n  'Mengupdate aset: {nama} ({kode})'\n);
+
+  :Redirect ke detail aset\ndengan flash success;
+
+fork again
+  ' ── HAPUS ASET ───────────────────────────────────────
+  :Klik ikon Hapus (🗑)\npada baris aset;
+
+  |Sistem|
+  :Tampilkan dialog konfirmasi\n(SweetAlert2);
+
+  |Pengguna|
+  if (Konfirmasi\nhapus?) then (Batal)
+    :Tutup dialog;
+  else (Hapus)
+  endif
+
+  |Sistem|
+  :Asset::delete()\n(Soft Delete: isi deleted_at);
+
+  :ActivityLogger::logAsset(\n  'Delete',\n  'Menghapus aset: {nama} ({kode})'\n);
+
+  :Redirect ke /aset\ndengan flash success;
+
+fork again
+  ' ── LIHAT DETAIL ─────────────────────────────────────
+  :Klik ikon Detail (👁)\npada baris aset;
+
+  |Sistem|
+  :Load aset dengan relasi:\nbarang, ruangan, creator, updater;
+  :Tampilkan halaman detail aset\n(info lengkap + foto + QR Code);
+
+  |Pengguna|
+  :Melihat detail aset;
+
+fork again
+  ' ── FILTER & CARI ────────────────────────────────────
+  :Input kata kunci pencarian\natau pilih filter\n(Status/Kondisi/Kategori);
+
+  |Sistem|
+  :Query dengan WHERE clause\nsesuai filter yang dipilih;
+  :Tampilkan hasil filter\ndengan pagination (15/halaman);
+
+end fork
+
+|Pengguna|
+:Selesai;
+
+stop
+
+@enduml

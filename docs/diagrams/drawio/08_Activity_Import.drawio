@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-07" version="21.0.0">
+  <diagram name="Activity Diagram - Import Data">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="sw_root" value="Activity Diagram — Import Data (Excel/CSV)" style="shape=pool;startSize=30;horizontal=1;childLayout=stackLayout;horizontalStack=1;resizeParent=1;resizeParentMax=0;collapsible=0;marginBottom=0;fillColor=#1a3470;fontColor=#ffffff;strokeColor=#1a3470;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="900" height="1000" as="geometry"/></mxCell>
+        <mxCell id="sw_u" value="Pengguna" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;horizontal=0;" vertex="1" parent="sw_root"><mxGeometry x="0" y="0" width="300" height="1000" as="geometry"/></mxCell>
+        <mxCell id="sw_s" value="Sistem" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;horizontal=0;" vertex="1" parent="sw_root"><mxGeometry x="300" y="0" width="600" height="1000" as="geometry"/></mxCell>
+        <mxCell id="is" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="sw_u"><mxGeometry x="135" y="30" width="30" height="30" as="geometry"/></mxCell>
+        <mxCell id="i1" value="Login ke sistem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="90" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="i2" value="Pilih menu Import" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="160" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="is1" value="Tampilkan halaman import (pilih tipe: Aset/Barang)&#xa;+ tombol Download Template" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="160" width="520" height="50" as="geometry"/></mxCell>
+        <mxCell id="id1" value="Perlu&#xa;template?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="90" y="240" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="i3" value="Klik &quot;Download Template&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="330" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="is2" value="GET /import/template → Generate CSV template → Download" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="330" width="520" height="40" as="geometry"/></mxCell>
+        <mxCell id="i4" value="Isi data di template Excel/CSV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="400" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="i5" value="Pilih tipe (Aset/Barang)&#xa;Upload file Excel/CSV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="470" width="200" height="50" as="geometry"/></mxCell>
+        <mxCell id="i6" value="Klik &quot;Import&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="550" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="is3" value="POST /import {file, type}&#xa;Validasi: file required, mimes:xlsx,xls,csv; type in:aset,barang" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="550" width="520" height="50" as="geometry"/></mxCell>
+        <mxCell id="id2" value="File valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="210" y="630" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="is4" value="Error: &quot;File harus berformat Excel atau CSV&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="380" y="640" width="180" height="40" as="geometry"/></mxCell>
+        <mxCell id="is5" value="Baca setiap baris → Validasi per baris&#xa;(kode_barang exists, kondisi valid, dll)&#xa;→ Asset::create() / Barang::create()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="720" width="520" height="70" as="geometry"/></mxCell>
+        <mxCell id="is6" value="Hitung: X berhasil, Y gagal&#xa;Redirect + flash message hasil import" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="820" width="520" height="50" as="geometry"/></mxCell>
+        <mxCell id="i7" value="Melihat hasil import di daftar data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="900" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="ie" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;double=1;" vertex="1" parent="sw_u"><mxGeometry x="135" y="960" width="30" height="30" as="geometry"/></mxCell>
+        <mxCell id="arr_is_i1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is" target="i1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i1_i2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i1" target="i2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i2_is1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i2" target="is1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_is1_id1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is1" target="id1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_id1_i3" value="Ya" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="id1" target="i3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i3_is2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i3" target="is2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_is2_i4" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is2" target="i4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i4_i5" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i4" target="i5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_id1_i5" value="Tidak" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="id1" target="i5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i5_i6" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i5" target="i6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i6_is3" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i6" target="is3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_is3_id2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is3" target="id2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_id2_is5" value="Valid" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="id2" target="is5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_id2_is4" value="Tidak" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="id2" target="is4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_is4_i5" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is4" target="i5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_is5_is6" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is5" target="is6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_is6_i7" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="is6" target="i7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_i7_ie" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="i7" target="ie"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

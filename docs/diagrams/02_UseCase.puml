@@ -1,0 +1,292 @@
+@startuml UseCase_SimAset_RBTV
+' ============================================================
+' USE CASE DIAGRAM — SimAset RBTV Bengkulu
+' Berdasarkan routes/web.php, Controller, dan DB aktual
+'
+' ATURAN include/extend:
+'   <<include>> = use case SELALU dipanggil (wajib)
+'   <<extend>>  = use case dipanggil HANYA pada kondisi tertentu
+' ============================================================
+
+skinparam actorStyle awesome
+skinparam usecaseBorderColor #2c3e50
+skinparam usecaseBackgroundColor #fffde7
+skinparam usecaseFontSize 11
+skinparam actorFontSize 12
+skinparam actorBorderColor #1a3470
+skinparam ArrowColor #2c3e50
+skinparam ArrowThickness 1.2
+skinparam packageBorderColor #1a3470
+skinparam packageBackgroundColor #e8eaf6
+skinparam packageFontColor #1a3470
+skinparam packageFontSize 12
+
+title <b>Use Case Diagram</b>\nSistem Informasi Manajemen Aset — SimAset RBTV Bengkulu
+
+' ============================================================
+' AKTOR
+' ============================================================
+actor "Admin" as Admin #1a3470
+actor "Staff" as Staff #2e7d32
+
+' ============================================================
+' SISTEM
+' ============================================================
+rectangle "**Sistem Informasi Manajemen Aset (SimAset) — RBTV Bengkulu**" {
+
+  ' ── AUTENTIKASI ──────────────────────────────────────────
+  package "Autentikasi" {
+    usecase "Login" as UC_Login
+    usecase "Logout" as UC_Logout
+    usecase "Lupa Password\n(Kirim Email Reset)" as UC_LupaPassword
+    usecase "Reset Password\n(via Token Email)" as UC_ResetPwd
+    usecase "Edit Profil" as UC_EditProfil
+    usecase "Ganti Password" as UC_GantiPwd
+    usecase "Hapus Akun Sendiri\n(konfirmasi password)" as UC_HapusAkun
+  }
+
+  ' ── DASHBOARD ────────────────────────────────────────────
+  package "Dashboard" {
+    usecase "Lihat Dashboard\n(Statistik & Grafik)" as UC_Dashboard
+  }
+
+  ' ── MANAJEMEN ASET ───────────────────────────────────────
+  package "Manajemen Aset" {
+    usecase "Lihat Daftar Aset\n(+ Filter & Cari)" as UC_ListAset
+    usecase "Tambah Aset Baru" as UC_TambahAset
+    usecase "Edit Data Aset" as UC_EditAset
+    usecase "Lihat Detail Aset" as UC_DetailAset
+    usecase "Hapus Aset\n(Soft Delete)" as UC_HapusAset
+    usecase "Hapus Aset Massal\n(Batch Delete)" as UC_BatchHapus
+    usecase "Upload Foto Aset" as UC_UploadFoto
+  }
+
+  ' ── MANAJEMEN BARANG (MASTER) ─────────────────────────────
+  package "Manajemen Barang (Master)" {
+    usecase "Lihat Daftar Barang\n(+ Filter & Cari)" as UC_ListBarang
+    usecase "Tambah Barang" as UC_TambahBarang
+    usecase "Edit Barang" as UC_EditBarang
+    usecase "Hapus Barang\n(Soft Delete)" as UC_HapusBarang
+    usecase "Lihat Detail Barang" as UC_DetailBarang
+  }
+
+  ' ── MANAJEMEN RUANGAN (MASTER) ───────────────────────────
+  package "Manajemen Ruangan (Master)" {
+    usecase "Lihat Daftar Ruangan\n(+ Jumlah Aset)" as UC_ListRuangan
+    usecase "Tambah Ruangan" as UC_TambahRuangan
+    usecase "Edit Ruangan" as UC_EditRuangan
+    usecase "Hapus Ruangan\n(validasi: tidak ada aset)" as UC_HapusRuangan
+  }
+
+  ' ── QR CODE ──────────────────────────────────────────────
+  package "QR Code" {
+    usecase "Generate QR Code\n(via API qrserver.com)" as UC_GenQR
+    usecase "Lihat QR Code Aset" as UC_LihatQR
+    usecase "Download QR Code\n(file PNG)" as UC_DownloadQR
+    usecase "Cetak QR Code Massal\n(Batch Print)" as UC_BatchQR
+    usecase "Scan QR Code\n(via Kamera Browser)" as UC_ScanQR
+    usecase "Lihat Detail Aset\nvia QR (Publik)" as UC_DetailQR
+  }
+
+  ' ── MAINTENANCE ──────────────────────────────────────────
+  package "Maintenance" {
+    usecase "Lihat Dashboard\nMaintenance" as UC_ListMaint
+    usecase "Set Aset ke\nMaintenance" as UC_SetMaint
+    usecase "Selesaikan\nMaintenance" as UC_SelesaiMaint
+  }
+
+  ' ── IMPORT ───────────────────────────────────────────────
+  package "Import Data" {
+    usecase "Import Aset\ndari Excel/CSV" as UC_ImportAset
+    usecase "Import Barang\ndari Excel/CSV" as UC_ImportBarang
+    usecase "Download Template\nImport" as UC_TemplateImport
+  }
+
+  ' ── EXPORT ───────────────────────────────────────────────
+  package "Export Data" {
+    usecase "Export Aset\nke Excel (.xlsx)" as UC_ExportAsetExcel
+    usecase "Export Aset\nke PDF" as UC_ExportAsetPDF
+    usecase "Export Barang\nke Excel (.xlsx)" as UC_ExportBarangExcel
+    usecase "Export Barang\nke PDF" as UC_ExportBarangPDF
+  }
+
+  ' ── LAPORAN ──────────────────────────────────────────────
+  package "Laporan" {
+    usecase "Lihat Halaman\nLaporan" as UC_Laporan
+    usecase "Laporan Aset\n(dengan Filter)" as UC_LapAset
+    usecase "Cetak Laporan Aset\n(PDF)" as UC_CetakAset
+    usecase "Export Laporan Aset\n(Excel)" as UC_ExportLapAset
+    usecase "Laporan Aset\nPer Ruangan" as UC_LapRuangan
+    usecase "Export Laporan\nMaintenance (PDF)" as UC_LapMaintPDF
+    usecase "Export Laporan\nMaintenance (CSV)" as UC_LapMaintCSV
+  }
+
+  ' ── ADMIN ONLY ───────────────────────────────────────────
+  package "Administrasi (Admin Only)" {
+    usecase "Lihat Daftar\nPengguna" as UC_ListUser
+    usecase "Tambah Pengguna\nBaru" as UC_TambahUser
+    usecase "Edit Data\nPengguna" as UC_EditUser
+    usecase "Hapus Pengguna" as UC_HapusUser
+    usecase "Lihat Audit Log\n(Log Aktivitas)" as UC_AuditLog
+    usecase "Filter Audit Log\n(user/aktivitas/kata kunci)" as UC_FilterAudit
+  }
+
+}
+
+' ============================================================
+' RELASI AKTOR → USE CASE
+' ============================================================
+
+' --- Staff ---
+Staff --> UC_Login
+Staff --> UC_Logout
+Staff --> UC_LupaPassword
+Staff --> UC_ResetPwd
+Staff --> UC_EditProfil
+Staff --> UC_GantiPwd
+Staff --> UC_HapusAkun
+Staff --> UC_Dashboard
+Staff --> UC_ListAset
+Staff --> UC_TambahAset
+Staff --> UC_EditAset
+Staff --> UC_DetailAset
+Staff --> UC_HapusAset
+Staff --> UC_BatchHapus
+Staff --> UC_ListBarang
+Staff --> UC_TambahBarang
+Staff --> UC_EditBarang
+Staff --> UC_HapusBarang
+Staff --> UC_DetailBarang
+Staff --> UC_ListRuangan
+Staff --> UC_TambahRuangan
+Staff --> UC_EditRuangan
+Staff --> UC_HapusRuangan
+Staff --> UC_GenQR
+Staff --> UC_LihatQR
+Staff --> UC_DownloadQR
+Staff --> UC_BatchQR
+Staff --> UC_ScanQR
+Staff --> UC_ListMaint
+Staff --> UC_SetMaint
+Staff --> UC_SelesaiMaint
+Staff --> UC_ImportAset
+Staff --> UC_ImportBarang
+Staff --> UC_TemplateImport
+Staff --> UC_ExportAsetExcel
+Staff --> UC_ExportAsetPDF
+Staff --> UC_ExportBarangExcel
+Staff --> UC_ExportBarangPDF
+Staff --> UC_Laporan
+Staff --> UC_LapAset
+Staff --> UC_CetakAset
+Staff --> UC_ExportLapAset
+Staff --> UC_LapRuangan
+Staff --> UC_LapMaintPDF
+Staff --> UC_LapMaintCSV
+
+' --- Admin (semua Staff + administrasi) ---
+Admin --> UC_Login
+Admin --> UC_Logout
+Admin --> UC_LupaPassword
+Admin --> UC_ResetPwd
+Admin --> UC_EditProfil
+Admin --> UC_GantiPwd
+Admin --> UC_HapusAkun
+Admin --> UC_Dashboard
+Admin --> UC_ListAset
+Admin --> UC_TambahAset
+Admin --> UC_EditAset
+Admin --> UC_DetailAset
+Admin --> UC_HapusAset
+Admin --> UC_BatchHapus
+Admin --> UC_ListBarang
+Admin --> UC_TambahBarang
+Admin --> UC_EditBarang
+Admin --> UC_HapusBarang
+Admin --> UC_DetailBarang
+Admin --> UC_ListRuangan
+Admin --> UC_TambahRuangan
+Admin --> UC_EditRuangan
+Admin --> UC_HapusRuangan
+Admin --> UC_GenQR
+Admin --> UC_LihatQR
+Admin --> UC_DownloadQR
+Admin --> UC_BatchQR
+Admin --> UC_ScanQR
+Admin --> UC_ListMaint
+Admin --> UC_SetMaint
+Admin --> UC_SelesaiMaint
+Admin --> UC_ImportAset
+Admin --> UC_ImportBarang
+Admin --> UC_TemplateImport
+Admin --> UC_ExportAsetExcel
+Admin --> UC_ExportAsetPDF
+Admin --> UC_ExportBarangExcel
+Admin --> UC_ExportBarangPDF
+Admin --> UC_Laporan
+Admin --> UC_LapAset
+Admin --> UC_CetakAset
+Admin --> UC_ExportLapAset
+Admin --> UC_LapRuangan
+Admin --> UC_LapMaintPDF
+Admin --> UC_LapMaintCSV
+Admin --> UC_ListUser
+Admin --> UC_TambahUser
+Admin --> UC_EditUser
+Admin --> UC_HapusUser
+Admin --> UC_AuditLog
+Admin --> UC_FilterAudit
+
+' ============================================================
+' RELASI INCLUDE & EXTEND
+' ============================================================
+' ATURAN:
+'   <<include>> = use case BASE selalu memanggil use case ini
+'   <<extend>>  = use case ini memperluas BASE hanya jika kondisi terpenuhi
+'                 Arah panah: dari extending UC ke base UC
+
+' ── Autentikasi ──
+' Lupa Password memerlukan Reset Password sebagai langkah lanjutan
+' (user klik link di email → halaman reset password)
+UC_ResetPwd ..> UC_LupaPassword : <<extend>>
+
+' ── Manajemen Aset ──
+' Upload foto adalah opsional saat tambah/edit aset
+UC_TambahAset ..> UC_UploadFoto : <<extend>>
+UC_EditAset ..> UC_UploadFoto : <<extend>>
+
+' Hapus massal adalah perluasan dari lihat daftar (kondisi: ada yang dicentang)
+UC_BatchHapus ..> UC_ListAset : <<extend>>
+
+' ── QR Code ──
+' Scan QR selalu menampilkan detail aset
+UC_ScanQR ..> UC_DetailQR : <<include>>
+
+' Lihat QR adalah bagian dari generate QR (setelah generate, langsung tampil)
+UC_GenQR ..> UC_LihatQR : <<extend>>
+
+' Batch print adalah perluasan dari lihat daftar (kondisi: ada yang dicentang)
+UC_BatchQR ..> UC_ListAset : <<extend>>
+
+' ── Maintenance ──
+' Selesaikan maintenance selalu mengirim email ke admin
+UC_SelesaiMaint ..> UC_EmailAdmin : <<include>>
+
+' ── Tambah Pengguna ──
+' Kirim email akun baru adalah opsional (kondisi: checkbox dicentang)
+UC_TambahUser ..> UC_KirimEmailAkun : <<extend>>
+
+' ── Laporan ──
+' Cetak PDF dan Export Excel adalah perluasan dari laporan aset
+UC_CetakAset ..> UC_LapAset : <<extend>>
+UC_ExportLapAset ..> UC_LapAset : <<extend>>
+
+' Filter audit log adalah perluasan dari lihat audit log
+UC_FilterAudit ..> UC_AuditLog : <<extend>>
+
+' ── Use case yang di-include tapi tidak punya aktor langsung ──
+' (didefinisikan di luar system boundary sebagai use case abstrak)
+usecase "Kirim Email\nNotifikasi Admin\n(Maintenance Selesai)" as UC_EmailAdmin
+usecase "Kirim Email\nAkun Baru" as UC_KirimEmailAkun
+
+@enduml

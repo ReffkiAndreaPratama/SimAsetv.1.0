@@ -1,0 +1,151 @@
+@startuml Activity_ManajemenAset_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — Manajemen Aset (CRUD)
+' SimAset RBTV Bengkulu
+' Swimlane: Pengguna | Sistem
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — Manajemen Aset (CRUD)</b>\nSimAset RBTV Bengkulu
+
+|Pengguna|
+start
+
+:Login ke sistem;
+
+:Pilih menu "Aset"\ndari sidebar navigasi;
+
+|Sistem|
+:Query aset dengan relasi barang dan ruangan\n(Asset::with(['barang','ruangan'])->paginate(15));
+:Tampilkan halaman daftar aset\n(tabel + 4 stats card + filter bar);
+
+|Pengguna|
+:Pilih aksi;
+
+if (Aksi yang dipilih?) then (Tambah Aset)
+
+  ' ── TAMBAH ASET ──────────────────────────────────────
+  |Sistem|
+  :Load dropdown:\n- Barang aktif (Barang::where('status','aktif'))\n- Semua Ruangan (Ruangan::orderBy('nama'));
+  :Tampilkan form tambah aset\n(4 section card);
+
+  |Pengguna|
+  :Isi form:\n- Pilih Barang* (kode_barang)\n- Pilih Ruangan* (ruangan_id)\n- Kondisi* (Baik/Rusak Ringan/Rusak Berat)\n- Status* (Aktif/Maintenance/Non-Aktif)\n- Tanggal Perolehan*\n- Harga Perolehan (opsional)\n- Sumber Perolehan (opsional)\n- Serial Number (opsional, unique)\n- Jumlah (default: 1)\n- Keterangan (opsional)\n- Foto (opsional, max 2MB);
+  :Klik "Simpan Aset";
+
+  |Sistem|
+  :Validasi server-side\n(required, exists, in, unique, dll);
+
+  if (Validasi gagal?) then (Ya)
+    :Redirect back dengan\npesan error per field;
+    |Pengguna|
+    :Perbaiki input;
+    |Sistem|
+    stop
+  else (Tidak)
+  endif
+
+  :Asset::generateKode()\n(gap-filling: cari nomor terkecil\nyang belum dipakai, termasuk soft-deleted);
+
+  if (Ada file foto diupload?) then (Ya)
+    :Simpan foto ke\npublic/foto_aset/{timestamp}_{nama};
+  else (Tidak)
+  endif
+
+  :Asset::create($data)\n[created_by = auth()->id()];
+  :ActivityLogger::logAsset('Create', '...')\n→ INSERT INTO log_aktivitas;
+  :Redirect ke /aset + flash success;
+
+elseif (Aksi yang dipilih?) then (Edit Aset)
+
+  ' ── EDIT ASET ────────────────────────────────────────
+  |Sistem|
+  :Load aset by kode_aset\n(Asset::where('kode_aset',...)->firstOrFail());
+  :Load dropdown Barang & Ruangan;
+  :Tampilkan form edit dengan data terisi;
+
+  |Pengguna|
+  :Ubah data yang diperlukan;
+  :Klik "Simpan Perubahan";
+
+  |Sistem|
+  :Validasi server-side;
+
+  if (Validasi gagal?) then (Ya)
+    :Redirect back dengan error;
+    |Pengguna|
+    :Perbaiki input;
+    |Sistem|
+    stop
+  else (Tidak)
+  endif
+
+  if (Ada foto baru diupload?) then (Ya)
+    :Hapus foto lama dari disk (jika ada);
+    :Simpan foto baru ke public/foto_aset/;
+  elseif (Remove photo dicentang?) then (Ya)
+    :Hapus file foto dari disk;
+    :Set foto = null;
+  else (Tidak ada perubahan foto)
+  endif
+
+  :$asset->update($data)\n[updated_by = auth()->id()];
+  :ActivityLogger::logAsset('Update', '...')\n→ INSERT INTO log_aktivitas;
+  :Redirect ke detail aset + flash success;
+
+elseif (Aksi yang dipilih?) then (Hapus Aset)
+
+  ' ── HAPUS ASET ───────────────────────────────────────
+  |Sistem|
+  :Tampilkan dialog konfirmasi\n(SweetAlert2);
+
+  |Pengguna|
+  if (Konfirmasi hapus?) then (Batal)
+    :Tutup dialog;
+    stop
+  else (Hapus)
+  endif
+
+  |Sistem|
+  :$asset->delete()\n(Soft Delete: isi deleted_at = NOW());
+  :ActivityLogger::logAsset('Delete', '...')\n→ INSERT INTO log_aktivitas;
+  :Redirect ke /aset + flash success;
+
+elseif (Aksi yang dipilih?) then (Lihat Detail)
+
+  ' ── LIHAT DETAIL ─────────────────────────────────────
+  |Sistem|
+  :Load aset dengan relasi:\nbarang, ruangan, creator, updater;
+  :Tampilkan halaman detail aset\n(info lengkap + foto + QR Code);
+
+  |Pengguna|
+  :Melihat detail aset;
+
+else (Filter & Cari)
+
+  ' ── FILTER & CARI ────────────────────────────────────
+  |Pengguna|
+  :Input kata kunci pencarian\ndan/atau pilih filter\n(Status / Kondisi / Kategori);
+
+  |Sistem|
+  :Query dengan WHERE clause\nsesuai filter yang dipilih;
+  :Tampilkan hasil filter\ndengan pagination (15/halaman);
+
+endif
+
+|Pengguna|
+:Selesai;
+
+stop
+
+@enduml

@@ -1,0 +1,126 @@
+@startuml Sequence_Maintenance_SimAset
+' ============================================================
+' SEQUENCE DIAGRAM — Proses Maintenance Aset
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #2c3e50
+skinparam sequenceParticipantBackgroundColor #e8eaf6
+skinparam sequenceParticipantFontSize 11
+skinparam sequenceLifeLineBorderColor #2c3e50
+skinparam sequenceGroupBorderColor #1a3470
+skinparam sequenceGroupBackgroundColor #e3f2fd
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+skinparam sequenceActorBorderColor #1a3470
+skinparam sequenceActorBackgroundColor #bbdefb
+
+title <b>Sequence Diagram — Proses Maintenance Aset</b>\nSimAset RBTV Bengkulu
+
+actor "Staff/Admin" as User
+boundary ":Browser" as Browser
+control ":MaintenanceController" as MaintCtrl
+entity ":Asset\n(Model)" as AssetModel
+entity ":User\n(Model)" as UserModel
+entity ":ActivityLogger\n(Helper)" as Logger
+entity ":MaintenanceAlert\n(Mail)" as MailClass
+database ":Database\n(MySQL)" as DB
+boundary ":SMTP Server\n(Email)" as SMTP
+
+== BAGIAN 1: Set Aset ke Maintenance ==
+
+User -> Browser : Buka detail aset AST-001\nKlik "Set Maintenance"
+Browser -> Browser : Tampilkan modal konfirmasi\n+ input keterangan
+
+User -> Browser : Input keterangan (opsional)\nKlik "Konfirmasi"
+Browser -> MaintCtrl : POST /maintenance/AST-001/set\n{keterangan: "Kamera rusak, perlu servis"}
+
+MaintCtrl -> AssetModel : Asset::where('kode_aset','AST-001')\n->firstOrFail()
+AssetModel -> DB : SELECT * FROM aset\nWHERE kode_aset = 'AST-001'\nAND deleted_at IS NULL
+DB --> AssetModel : Asset record
+AssetModel --> MaintCtrl : $asset
+
+MaintCtrl -> MaintCtrl : $request->validate([\n  'keterangan' => 'nullable|string|max:500'\n])
+
+MaintCtrl -> AssetModel : $asset->update([\n  'status' => 'Maintenance',\n  'keterangan' => 'Kamera rusak, perlu servis',\n  'updated_by' => auth()->id()\n])
+AssetModel -> DB : UPDATE aset\nSET status = 'Maintenance',\n    keterangan = 'Kamera rusak, perlu servis',\n    updated_by = 3,\n    updated_at = NOW()\nWHERE kode_aset = 'AST-001'
+DB --> AssetModel : OK
+AssetModel --> MaintCtrl : OK
+
+MaintCtrl -> Logger : ActivityLogger::logAsset(\n  'Update',\n  'Aset masuk maintenance: Kamera Sony A7 (AST-001)'\n)
+Logger -> DB : INSERT INTO log_aktivitas ...
+DB --> Logger : OK
+
+MaintCtrl --> Browser : redirect()->back()\n->with('success', 'Aset AST-001 berhasil ditandai sebagai Maintenance')
+Browser --> User : Notifikasi sukses ditampilkan
+
+== BAGIAN 2: Lihat Dashboard Maintenance ==
+
+User -> Browser : Klik menu "Maintenance"
+Browser -> MaintCtrl : GET /maintenance
+MaintCtrl -> AssetModel : Asset::with(['barang','ruangan'])\n->where('status','Maintenance')\n->orderBy('updated_at','desc')\n->paginate(15)
+AssetModel -> DB : SELECT aset.*, barang.*, ruangan.*\nFROM aset\nJOIN barang ON aset.kode_barang = barang.kode_barang\nJOIN ruangan ON aset.ruangan_id = ruangan.id\nWHERE aset.status = 'Maintenance'\nAND aset.deleted_at IS NULL\nORDER BY updated_at DESC
+DB --> AssetModel : [AST-001 Kamera Sony A7, ...]
+AssetModel --> MaintCtrl : $assets (paginated)
+
+MaintCtrl -> DB : COUNT aset WHERE status='Maintenance'
+MaintCtrl -> DB : COUNT aset WHERE kondisi='Rusak Berat'
+MaintCtrl -> DB : COUNT aset WHERE kondisi='Rusak Ringan'
+DB --> MaintCtrl : Stats
+
+MaintCtrl --> Browser : view('maintenance.index', compact(...))\n[daftar aset + statistik]
+Browser --> User : Dashboard maintenance ditampilkan
+
+== BAGIAN 3: Selesaikan Maintenance ==
+
+User -> Browser : Klik "Selesai" pada AST-001
+Browser -> Browser : Tampilkan modal:\n- Pilih kondisi akhir (wajib)\n- Input keterangan
+
+User -> Browser : Pilih kondisi "Baik"\nInput keterangan "Sudah diperbaiki"\nKlik "Konfirmasi Selesai"
+Browser -> MaintCtrl : PATCH /maintenance/AST-001/complete\n{kondisi: "Baik", keterangan: "Sudah diperbaiki"}
+
+MaintCtrl -> AssetModel : Asset::where('kode_aset','AST-001')->firstOrFail()
+AssetModel -> DB : SELECT * FROM aset WHERE kode_aset = 'AST-001'
+DB --> AssetModel : Asset record
+AssetModel --> MaintCtrl : $asset
+
+MaintCtrl -> MaintCtrl : $request->validate([\n  'kondisi' => 'required|in:Baik,Rusak Ringan,Rusak Berat',\n  'keterangan' => 'nullable|string|max:500'\n])
+
+alt Validasi gagal (kondisi tidak dipilih)
+  MaintCtrl --> Browser : Redirect back + error
+  Browser --> User : Pesan error "Kondisi wajib dipilih"
+else Validasi berhasil
+end
+
+MaintCtrl -> AssetModel : $asset->update([\n  'status' => 'Aktif',\n  'kondisi' => 'Baik',\n  'keterangan' => 'Sudah diperbaiki',\n  'updated_by' => auth()->id()\n])
+AssetModel -> DB : UPDATE aset\nSET status = 'Aktif',\n    kondisi = 'Baik',\n    keterangan = 'Sudah diperbaiki',\n    updated_by = 3,\n    updated_at = NOW()\nWHERE kode_aset = 'AST-001'
+DB --> AssetModel : OK
+
+MaintCtrl -> Logger : ActivityLogger::logAsset(\n  'Update',\n  'Maintenance selesai: Kamera Sony A7 (AST-001) — kondisi: Baik'\n)
+Logger -> DB : INSERT INTO log_aktivitas ...
+DB --> Logger : OK
+
+MaintCtrl -> UserModel : User::where('role','admin')\n->where('is_active', 1)->get()
+UserModel -> DB : SELECT * FROM users\nWHERE role = 'admin'\nAND is_active = 1
+DB --> UserModel : [Admin Magang (magangrbtv@gmail.com)]
+UserModel --> MaintCtrl : Collection $admins
+
+loop Untuk setiap Admin
+  MaintCtrl -> MailClass : new MaintenanceAlert($asset, 'selesai')
+  MaintCtrl -> SMTP : Mail::to($admin->email)->send($mail)
+  SMTP --> MaintCtrl : Email terkirim
+  note right of SMTP
+    Jika SMTP gagal, exception
+    di-catch dan proses tetap lanjut
+    (tidak menghentikan redirect)
+  end note
+end
+
+MaintCtrl --> Browser : redirect()->route('maintenance.index')\n->with('success', 'Maintenance AST-001 selesai. Status kembali Aktif.')
+Browser --> User : Dashboard maintenance\ndengan notifikasi sukses
+
+actor "Admin" as Admin
+SMTP --> Admin : Email notifikasi:\n"Maintenance Selesai:\nKamera Sony A7 (AST-001)\nKondisi akhir: Baik"
+
+@enduml

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-07" version="21.0.0">
+  <diagram name="Activity Diagram — Manajemen Ruangan (CRUD)">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="sw_root" value="Activity Diagram — Manajemen Ruangan (CRUD)" style="shape=pool;startSize=30;horizontal=1;childLayout=stackLayout;horizontalStack=1;resizeParent=1;resizeParentMax=0;collapsible=0;marginBottom=0;fillColor=#1a3470;fontColor=#ffffff;strokeColor=#1a3470;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="1000" height="1100" as="geometry"/></mxCell>
+        <mxCell id="sw_u" value="Pengguna" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;horizontal=0;" vertex="1" parent="sw_root"><mxGeometry x="0" y="0" width="320" height="1100" as="geometry"/></mxCell>
+        <mxCell id="sw_s" value="Sistem" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;horizontal=0;" vertex="1" parent="sw_root"><mxGeometry x="320" y="0" width="680" height="1100" as="geometry"/></mxCell>
+        <mxCell id="cs" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="sw_u"><mxGeometry x="145" y="30" width="30" height="30" as="geometry"/></mxCell>
+        <mxCell id="c1" value="Login ke sistem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="90" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="c2" value="Pilih menu &quot;Ruangan&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="160" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="cs1" value="Query Ruangan dari database → Tampilkan daftar (tabel + filter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="160" width="600" height="50" as="geometry"/></mxCell>
+        <mxCell id="cd1" value="Pilih aksi?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="100" y="240" width="120" height="60" as="geometry"/></mxCell>
+        <mxCell id="c3" value="Klik &quot;+ Tambah Ruangan&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="340" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="cs2" value="Tampilkan form tambah Ruangan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="340" width="600" height="40" as="geometry"/></mxCell>
+        <mxCell id="c4" value="Isi form: Nama Ruangan*, Lantai, Keterangan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="410" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="c5" value="Klik &quot;Simpan&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="500" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="cs3" value="Validasi server-side" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="500" width="600" height="40" as="geometry"/></mxCell>
+        <mxCell id="cd2" value="Validasi&#xa;gagal?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="250" y="570" width="110" height="60" as="geometry"/></mxCell>
+        <mxCell id="cs4" value="Redirect back + error per field" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="430" y="580" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="cs5" value="Ruangan::create($data) → ActivityLogger::log(&#39;Create&#39;) → Redirect" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="660" width="600" height="50" as="geometry"/></mxCell>
+        <mxCell id="c6" value="Klik Edit (✏) pada baris data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="740" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="cs6" value="Load data → Tampilkan form edit → Validasi → update() → Log → Redirect" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="740" width="600" height="50" as="geometry"/></mxCell>
+        <mxCell id="c7" value="Klik Hapus (🗑) → Konfirmasi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="60" y="820" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="cs7" value="delete() [Soft Delete] → ActivityLogger::log(&#39;Delete&#39;) → Redirect" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="820" width="600" height="50" as="geometry"/></mxCell>
+        <mxCell id="cnote" value="Validasi hapus: Ruangan tidak bisa dihapus jika masih ada aset terdaftar" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fontSize=10;fillColor=#fffacd;strokeColor=#d6b656;" vertex="1" parent="sw_s"><mxGeometry x="40" y="900" width="600" height="60" as="geometry"/></mxCell>
+        <mxCell id="ce" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;double=1;" vertex="1" parent="sw_u"><mxGeometry x="145" y="1040" width="30" height="30" as="geometry"/></mxCell>
+        <mxCell id="arr_cs_c1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs" target="c1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c1_c2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c1" target="c2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c2_cs1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c2" target="cs1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs1_cd1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs1" target="cd1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cd1_c3" value="Tambah" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cd1" target="c3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c3_cs2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c3" target="cs2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs2_c4" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs2" target="c4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c4_c5" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c4" target="c5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c5_cs3" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c5" target="cs3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs3_cd2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs3" target="cd2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cd2_cs5" value="Tidak" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cd2" target="cs5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cd2_cs4" value="Ya" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cd2" target="cs4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs4_c4" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs4" target="c4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs5_ce" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs5" target="ce"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cd1_c6" value="Edit" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cd1" target="c6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c6_cs6" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c6" target="cs6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs6_ce" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs6" target="ce"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cd1_c7" value="Hapus" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cd1" target="c7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_c7_cs7" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="c7" target="cs7"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_cs7_ce" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="cs7" target="ce"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

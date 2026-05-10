@@ -1,0 +1,128 @@
+@startuml Activity_Login_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — Proses Login & Logout
+' SimAset RBTV Bengkulu
+' Berdasarkan: AuthenticatedSessionController + LoginRequest
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — Proses Login & Logout</b>\nSimAset RBTV Bengkulu
+
+|Pengguna|
+start
+:Buka halaman /login\n(middleware: guest — redirect ke\ndashboard jika sudah login);
+
+:Input Email dan Password;
+
+|Sistem|
+:Terima request POST /login;
+
+:Validasi rules():\n- email: required|string|email\n- password: required|string;
+
+if (Input kosong atau\nformat email salah?) then (Ya)
+  :Redirect back dengan\npesan error per field;
+  |Pengguna|
+  :Perbaiki input;
+  |Sistem|
+else (Tidak)
+endif
+
+:ensureIsNotRateLimited()\nthrottleKey = lower(email)|ip_address;
+
+:RateLimiter::tooManyAttempts(\n  throttleKey, maxAttempts=5\n);
+
+if (Sudah >5 percobaan\ngagal?) then (Ya)
+  :event(new Lockout)\nambil sisa waktu tunggu;
+  :Tampilkan pesan:\n"Terlalu banyak percobaan.\nCoba lagi dalam X detik.";
+  |Pengguna|
+  :Tunggu dan coba lagi;
+  |Sistem|
+else (Tidak)
+endif
+
+:User::where('email', $email)->first();
+
+if (Email tidak\nterdaftar?) then (Ya)
+  :RateLimiter::hit(throttleKey);
+  :Tampilkan error:\n"User tidak ditemukan.";
+  |Pengguna|
+  :Coba input ulang;
+  |Sistem|
+else (Tidak)
+endif
+
+:Cek $user->is_active;
+
+if (Akun tidak\naktif?) then (Ya)
+  :RateLimiter::hit(throttleKey);
+  :Tampilkan error:\n"Akun Anda belum aktif.\nSilakan hubungi administrator.";
+  |Pengguna|
+  :Hubungi Admin;
+  |Sistem|
+else (Tidak)
+endif
+
+:Auth::attempt({email, password}, $remember)\n(verifikasi password hash bcrypt);
+
+if (Password\nsalah?) then (Ya)
+  :RateLimiter::hit(throttleKey);
+  :Tampilkan error:\n"Kredensial tidak cocok.";
+  |Pengguna|
+  :Coba input ulang;
+  |Sistem|
+else (Benar)
+endif
+
+:RateLimiter::clear(throttleKey)\n(reset hitungan gagal);
+
+:$request->session()->regenerate()\n(cegah session fixation attack);
+
+:Auth::user()->update(\n  ['last_login_at' => now()]\n)\n→ UPDATE users SET last_login_at = NOW();
+
+:ActivityLogger::logAuth(\n  'Login',\n  'User berhasil login: {name} ({email})'\n)\n→ INSERT INTO log_aktivitas;
+
+:redirect()->route('dashboard');
+
+|Pengguna|
+:Melihat halaman Dashboard;
+
+note right
+  Pengguna sudah terautentikasi.
+  Session aktif di tabel sessions.
+  Role (admin/staff) menentukan
+  menu yang tampil di sidebar.
+end note
+
+' ── LOGOUT ──────────────────────────────────────────────────
+' (Alur terpisah — dimulai dari kondisi sudah login)
+
+|Pengguna|
+:Klik tombol "Logout"\n(POST /logout, middleware: auth);
+
+|Sistem|
+:ActivityLogger::logAuth(\n  'Logout',\n  'User logout: {name}'\n)\n→ INSERT INTO log_aktivitas;
+
+:Auth::guard('web')->logout()\n(hapus autentikasi dari session);
+
+:$request->session()->invalidate()\n(hapus semua data session);
+
+:$request->session()->regenerateToken()\n(buat CSRF token baru);
+
+:redirect('/')\n→ redirect ke /login;
+
+|Pengguna|
+:Kembali ke halaman Login;
+
+stop
+
+@enduml

@@ -1,0 +1,150 @@
+@startuml Sequence_Login_SimAset
+' ============================================================
+' SEQUENCE DIAGRAM — Proses Login
+' SimAset RBTV Bengkulu
+' Berdasarkan: AuthenticatedSessionController + LoginRequest
+' ============================================================
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #2c3e50
+skinparam sequenceParticipantBackgroundColor #e8eaf6
+skinparam sequenceParticipantFontSize 11
+skinparam sequenceLifeLineBorderColor #2c3e50
+skinparam sequenceGroupBorderColor #1a3470
+skinparam sequenceGroupBackgroundColor #e3f2fd
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+skinparam sequenceActorBorderColor #1a3470
+skinparam sequenceActorBackgroundColor #bbdefb
+
+title <b>Sequence Diagram — Proses Login</b>\nSimAset RBTV Bengkulu
+
+actor "Pengguna" as User
+boundary ":Browser" as Browser
+control ":Router\n(routes/auth.php)" as Router
+control ":AuthenticatedSession\nController" as AuthCtrl
+entity ":LoginRequest" as LoginReq
+entity ":RateLimiter\n(Laravel)" as RateLimit
+entity ":User\n(Model)" as UserModel
+database ":Database\n(MySQL: simset_rbtv)" as DB
+entity ":Session\n(Laravel)" as Session
+entity ":ActivityLogger\n(Helper)" as Logger
+entity ":ActivityLog\n(log_aktivitas)" as LogModel
+
+== Tampilkan Halaman Login ==
+
+User -> Browser : Buka /login
+Browser -> Router : GET /login\n[middleware: guest]
+Router -> AuthCtrl : create()
+AuthCtrl --> Browser : view('auth.login')
+Browser --> User : Halaman login ditampilkan\n(form email + password)
+
+== Proses Autentikasi ==
+
+User -> Browser : Input email + password\nlalu klik "Masuk"
+Browser -> Router : POST /login\n{email, password, remember?}
+Router -> AuthCtrl : store(LoginRequest $request)
+
+note right of AuthCtrl
+  LoginRequest di-inject otomatis
+  oleh Laravel Service Container.
+  Validasi rules() dijalankan
+  sebelum store() dipanggil.
+end note
+
+AuthCtrl -> LoginReq : validate()\n[rules: email required|string|email,\npassword required|string]
+
+alt Validasi gagal (field kosong / format email salah)
+  LoginReq --> Browser : ValidationException\n→ Redirect back + errors
+  Browser --> User : Form dengan pesan error per field
+else Validasi berhasil
+end
+
+AuthCtrl -> LoginReq : authenticate()
+
+LoginReq -> LoginReq : ensureIsNotRateLimited()\nthrottleKey = lower(email)|ip_address
+
+LoginReq -> RateLimit : tooManyAttempts(throttleKey, 5)
+RateLimit --> LoginReq : true / false
+
+alt Rate limit terlampaui (>5 percobaan gagal)
+  LoginReq -> LoginReq : event(new Lockout($this))
+  LoginReq -> RateLimit : availableIn(throttleKey)
+  RateLimit --> LoginReq : $seconds
+  LoginReq --> Browser : ValidationException\n"Terlalu banyak percobaan.\nCoba lagi dalam X detik."
+  Browser --> User : Pesan rate limit
+else Belum terlampaui
+end
+
+LoginReq -> UserModel : User::where('email', $email)->first()
+UserModel -> DB : SELECT * FROM users\nWHERE email = 'magangrbtv@gmail.com'\nLIMIT 1
+DB --> UserModel : User record / null
+UserModel --> LoginReq : $user
+
+alt User tidak ditemukan ($user == null)
+  LoginReq -> RateLimit : hit(throttleKey)
+  LoginReq --> Browser : ValidationException\n{email: 'User tidak ditemukan.'}
+  Browser --> User : Pesan error
+else User ditemukan
+end
+
+LoginReq -> LoginReq : Cek $user->is_active
+
+alt Akun tidak aktif (is_active = 0)
+  LoginReq -> RateLimit : hit(throttleKey)
+  LoginReq --> Browser : ValidationException\n{email: 'Akun Anda belum aktif.\nSilakan hubungi administrator.'}
+  Browser --> User : Pesan error
+else Akun aktif
+end
+
+LoginReq -> LoginReq : Auth::attempt(\n  {email, password},\n  $remember\n)
+LoginReq -> DB : SELECT * FROM users\nWHERE email = ?\n(verifikasi password hash)
+DB --> LoginReq : match / no match
+
+alt Password salah (Auth::attempt = false)
+  LoginReq -> RateLimit : hit(throttleKey)
+  LoginReq --> Browser : ValidationException\n{email: trans('auth.failed')}
+  Browser --> User : "Kredensial tidak cocok"
+else Password benar (Auth::attempt = true)
+end
+
+LoginReq -> RateLimit : clear(throttleKey)\n(reset hitungan gagal)
+RateLimit --> LoginReq : OK
+LoginReq --> AuthCtrl : void (authenticate() selesai)
+
+AuthCtrl -> Session : $request->session()->regenerate()\n(cegah session fixation attack)
+Session --> AuthCtrl : OK
+
+AuthCtrl -> UserModel : Auth::user()->update(\n  ['last_login_at' => now()]\n)
+UserModel -> DB : UPDATE users\nSET last_login_at = '2026-05-07 ...',\n    updated_at = NOW()\nWHERE id = 3
+DB --> UserModel : OK
+
+AuthCtrl -> Logger : ActivityLogger::logAuth(\n  'Login',\n  'User berhasil login: Admin Magang (magangrbtv@gmail.com)'\n)
+Logger -> LogModel : ActivityLog::create([\n  user_id: 3,\n  aktivitas: 'Login',\n  keterangan: 'User berhasil login: ...',\n  ip_address: '127.0.0.1',\n  user_agent: 'Mozilla/5.0 ...'\n])
+LogModel -> DB : INSERT INTO log_aktivitas\n(user_id, aktivitas, keterangan,\nip_address, user_agent,\ncreated_at, updated_at)\nVALUES (3, 'Login', '...', ...)
+DB --> LogModel : id = 40 (AUTO_INCREMENT)
+LogModel --> Logger : ActivityLog record
+Logger --> AuthCtrl : OK
+
+AuthCtrl --> Browser : redirect()->route('dashboard')\n[HTTP 302]
+Browser --> User : Diarahkan ke /dashboard
+
+== Logout ==
+
+User -> Browser : Klik "Logout"
+Browser -> Router : POST /logout\n[middleware: auth]
+Router -> AuthCtrl : destroy(Request)
+
+AuthCtrl -> Logger : ActivityLogger::logAuth(\n  'Logout',\n  'User logout: Admin Magang'\n)
+Logger -> DB : INSERT INTO log_aktivitas ...
+DB --> Logger : OK
+
+AuthCtrl -> AuthCtrl : Auth::guard('web')->logout()
+AuthCtrl -> Session : $request->session()->invalidate()
+AuthCtrl -> Session : $request->session()->regenerateToken()
+Session --> AuthCtrl : OK
+
+AuthCtrl --> Browser : redirect('/')\n[HTTP 302]
+Browser --> User : Diarahkan ke /login
+
+@enduml

@@ -1,0 +1,475 @@
+@startuml ClassDiagram_SimAset
+' ============================================================
+' CLASS DIAGRAM — SimAset RBTV Bengkulu
+' Berdasarkan kode aktual: Models, Controllers, Middleware,
+' Helpers, Mail, Exports, Imports
+' ============================================================
+
+skinparam classBorderColor #2c3e50
+skinparam classFontSize 10
+skinparam classHeaderBackgroundColor #1a3470
+skinparam classHeaderFontColor white
+skinparam classBackgroundColor #f8f9fa
+skinparam ArrowColor #2c3e50
+skinparam ArrowThickness 1.5
+skinparam packageBorderColor #1a3470
+skinparam packageBackgroundColor #e8eaf6
+skinparam packageFontColor #1a3470
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Class Diagram</b>\nSimAset RBTV Bengkulu
+
+' ============================================================
+' MODELS (Eloquent ORM)
+' ============================================================
+package "Models (Eloquent ORM)" #dce8f5 {
+
+  class User <<Model>> {
+    + id : int <<PK, AUTO_INCREMENT>>
+    + name : string
+    + email : string <<UNIQUE>>
+    # password : string <<bcrypt>>
+    + role : string <<'admin'|'staff'>>
+    + is_active : bool <<DEFAULT true>>
+    + last_login_at : datetime
+    + created_at : datetime
+    + updated_at : datetime
+    --
+    + isAdmin() : bool
+    + isStaff() : bool
+    + getAvatarDefault() : string
+    + sendPasswordResetNotification(token) : void
+    --
+    # table = 'users'
+    # fillable : array
+    # hidden : array
+    # casts : array
+    <<HasFactory, Notifiable>>
+  }
+
+  class Asset <<Model>> {
+    + kode_aset : string <<PK, Format: AST-001>>
+    + kode_barang : string <<FK>>
+    + ruangan_id : int <<FK, NULL>>
+    + kondisi : string <<Baik|Rusak Ringan|Rusak Berat>>
+    + status : string <<Aktif|Maintenance|Non-Aktif>>
+    + serial_number : string <<NULL>>
+    + foto : string <<NULL>>
+    + jumlah : int <<DEFAULT 1>>
+    + tanggal_perolehan : date <<NULL>>
+    + harga_perolehan : decimal(15,2) <<NULL>>
+    + sumber_perolehan : string <<NULL>>
+    + keterangan : string <<NULL>>
+    + created_by : int <<NULL>>
+    + updated_by : int <<NULL>>
+    + created_at : datetime
+    + updated_at : datetime
+    + deleted_at : datetime <<NULL>>
+    --
+    + barang() : BelongsTo
+    + ruangan() : BelongsTo
+    + creator() : BelongsTo
+    + updater() : BelongsTo
+    + getNamaBarangAttribute() : string
+    + getKategoriAttribute() : string
+    + getNamaRuanganAttribute() : string
+    + {static} generateKode() : string
+    --
+    # table = 'aset'
+    # primaryKey = 'kode_aset'
+    # incrementing = false
+    # fillable : array
+    # casts : array
+    <<SoftDeletes>>
+  }
+
+  class Barang <<Model>> {
+    + kode_barang : string <<PK, Format: BRG-001>>
+    + nama_barang : string
+    + kategori : string <<Kamera|Audio|Komputer|...>>
+    + status : string <<aktif|nonaktif>>
+    + keterangan : string <<NULL>>
+    + created_at : datetime
+    + updated_at : datetime
+    + deleted_at : datetime <<NULL>>
+    --
+    + aset() : HasMany
+    + {static} generateKode() : string
+    --
+    # table = 'barang'
+    # primaryKey = 'kode_barang'
+    # incrementing = false
+    # fillable : array
+    <<SoftDeletes>>
+  }
+
+  class Ruangan <<Model>> {
+    + id : int <<PK, AUTO_INCREMENT>>
+    + nama : string
+    + lantai : string <<NULL>>
+    + keterangan : string <<NULL>>
+    + created_at : datetime
+    --
+    + assets() : HasMany
+    + getNamaRuanganAttribute() : string
+    --
+    # table = 'ruangan'
+    # fillable : array
+  }
+
+  class ActivityLog <<Model>> {
+    + id : bigint <<PK, AUTO_INCREMENT>>
+    + user_id : bigint <<NULL>>
+    + aktivitas : string <<Login|Logout|Create|Update|Delete>>
+    + keterangan : string <<NULL>>
+    + ip_address : string <<NULL>>
+    + user_agent : string <<NULL>>
+    + created_at : datetime
+    + updated_at : datetime
+    --
+    + user() : BelongsTo
+    --
+    # table = 'log_aktivitas'
+    # fillable : array
+  }
+
+}
+
+' ============================================================
+' CONTROLLERS
+' ============================================================
+package "Controllers" #d5e8d4 {
+
+  class DashboardController <<Controller>> {
+    + index() : View
+    --
+    ' Menampilkan: totalAset, asetAktif,
+    ' asetNonaktif, asetMaintenance, asetRusak,
+    ' totalBarang, totalRuangan, asetBulanIni,
+    ' kondisiDistribusi, kategoriDistribusi,
+    ' recentAssets
+  }
+
+  class AssetController <<Controller>> {
+    + index(Request) : View
+    + create() : View
+    + store(Request) : RedirectResponse
+    + show(kode_aset) : View
+    + edit(kode_aset) : View
+    + update(Request, kode_aset) : RedirectResponse
+    + destroy(kode_aset) : RedirectResponse
+    + batchDestroy(Request) : RedirectResponse
+    + generateQr(kode_aset) : RedirectResponse
+    + showQr(kode_aset) : View
+    + scanQr() : View
+    + checkNew(Request) : JsonResponse
+    + detail(kode_aset) : View
+    - generateQrCodeImage(Asset) : bool
+  }
+
+  class BarangController <<Controller>> {
+    + index(Request) : View
+    + create() : View
+    + store(Request) : RedirectResponse
+    + show(kode_barang) : View
+    + edit(kode_barang) : View
+    + update(Request, kode_barang) : RedirectResponse
+    + destroy(kode_barang) : RedirectResponse
+  }
+
+  class RuanganController <<Controller>> {
+    + index() : View
+    + create() : View
+    + store(Request) : RedirectResponse
+    + show(id) : View
+    + edit(id) : View
+    + update(Request, id) : RedirectResponse
+    + destroy(id) : RedirectResponse
+  }
+
+  class MaintenanceController <<Controller>> {
+    + index(Request) : View
+    + setMaintenance(Request, kode_aset) : RedirectResponse
+    + complete(Request, kode_aset) : RedirectResponse
+  }
+
+  class QrCodeController <<Controller>> {
+    + scanner() : View
+    + batchPrint(Request) : View
+    + search(Request) : JsonResponse
+    + download(kode_aset) : Response
+  }
+
+  class LaporanController <<Controller>> {
+    + index() : View
+    + aset(Request) : View
+    + cetakAset(Request) : Response
+    + exportAset(Request) : Response
+    + laporanRuangan(id) : View
+    + exportMaintenancePdf(Request) : Response
+    + exportMaintenanceCsv(Request) : Response
+  }
+
+  class ExportController <<Controller>> {
+    + indexAset() : View
+    + excelAset(Request) : BinaryFileResponse
+    + pdfAset(Request) : Response
+    + indexBarang() : View
+    + excelBarang(Request) : BinaryFileResponse
+    + pdfBarang(Request) : Response
+  }
+
+  class ImportController <<Controller>> {
+    + createAset() : View
+    + createBarang() : View
+    + store(Request) : RedirectResponse
+    + template(Request) : Response
+    - processImport(Request, type) : RedirectResponse
+  }
+
+  class UserController <<Controller>> {
+    + index() : View
+    + create() : View
+    + store(Request) : RedirectResponse
+    + edit(id) : View
+    + update(Request, id) : RedirectResponse
+    + destroy(id) : RedirectResponse
+  }
+
+  class AuditLogController <<Controller>> {
+    + index(Request) : View
+  }
+
+  class ProfileController <<Controller>> {
+    + edit(Request) : View
+    + update(ProfileUpdateRequest, Request) : RedirectResponse
+    + destroy(Request) : RedirectResponse
+  }
+
+}
+
+' ============================================================
+' AUTH CONTROLLERS (Laravel Breeze)
+' ============================================================
+package "Auth Controllers (Breeze)" #f5e6d3 {
+
+  class AuthenticatedSessionController <<AuthController>> {
+    + create() : View
+    + store(LoginRequest) : RedirectResponse
+    + destroy(Request) : RedirectResponse
+  }
+
+  class NewPasswordController <<AuthController>> {
+    + create(Request) : View
+    + store(Request) : RedirectResponse
+  }
+
+  class PasswordResetLinkController <<AuthController>> {
+    + create() : View
+    + store(Request) : RedirectResponse
+  }
+
+  class PasswordController <<AuthController>> {
+    + update(Request) : RedirectResponse
+  }
+
+}
+
+' ============================================================
+' MIDDLEWARE
+' ============================================================
+package "Middleware" #f5d5d5 {
+
+  class RoleMiddleware <<Middleware>> {
+    + handle(Request, Closure, ...roles) : Response
+    --
+    ' Cek: Auth::user()->role in $roles
+    ' Jika tidak: abort(403)
+  }
+
+  class LogActivity <<Middleware>> {
+    + handle(Request, Closure) : Response
+    + terminate(Request, Response) : void
+    --
+    ' terminate() mencatat aktivitas
+    ' berdasarkan method + path:
+    ' POST /login → Login
+    ' POST /logout → Logout
+    ' POST /aset → Create
+    ' PUT /aset/{id} → Update
+    ' DELETE /aset/{id} → Delete
+    ' (juga untuk barang & ruangan)
+  }
+
+  class SecurityHeaders <<Middleware>> {
+    + handle(Request, Closure) : Response
+    --
+    ' Set headers:
+    ' X-Content-Type-Options: nosniff
+    ' X-Frame-Options: DENY
+    ' X-XSS-Protection: 1; mode=block
+    ' Referrer-Policy: strict-origin-when-cross-origin
+    ' Content-Security-Policy: frame-ancestors 'self'
+  }
+
+}
+
+' ============================================================
+' HELPERS
+' ============================================================
+package "Helpers" #e8d5f5 {
+
+  class ActivityLogger <<Helper>> {
+    + {static} log(aktivitas, keterangan) : ActivityLog
+    + {static} logAuth(aktivitas, keterangan) : ActivityLog
+    + {static} logAsset(aktivitas, keterangan, asset) : ActivityLog
+    + {static} logMutasi(aktivitas, keterangan, asset) : ActivityLog
+    + {static} logUser(aktivitas, keterangan, user) : ActivityLog
+    --
+    ' Semua method memanggil log()
+    ' Menyimpan: user_id, aktivitas,
+    ' keterangan, ip_address, user_agent
+  }
+
+  class ImageHelper <<Helper>> {
+    + {static} resize(file, width, height) : string
+    + {static} delete(filename) : bool
+  }
+
+}
+
+' ============================================================
+' MAIL
+' ============================================================
+package "Mail (Mailable)" #fff3cd {
+
+  class AkunBaruMail <<Mailable>> {
+    + user : User
+    + plainPassword : string
+    --
+    + __construct(user, plainPassword)
+    + envelope() : Envelope
+    + content() : Content
+    --
+    ' Dikirim saat Admin tambah
+    ' pengguna baru dengan opsi
+    ' "Kirim Email" dicentang
+  }
+
+  class MaintenanceAlert <<Mailable>> {
+    + asset : Asset
+    + type : string <<'selesai'>>
+    --
+    + __construct(asset, type)
+    + envelope() : Envelope
+    + content() : Content
+    --
+    ' Dikirim ke semua Admin aktif
+    ' saat maintenance selesai
+  }
+
+}
+
+' ============================================================
+' EXPORTS & IMPORTS
+' ============================================================
+package "Exports & Imports" #d5f5e3 {
+
+  class AssetExportFile <<Export>> {
+    + filters : array
+    --
+    + __construct(filters)
+    + query() : Builder
+    + headings() : array
+    + map(row) : array
+    --
+    ' Implements: FromQuery,
+    ' WithHeadings, WithMapping
+  }
+
+  class BarangExportFile <<Export>> {
+    + query() : Builder
+    + headings() : array
+    --
+    ' Implements: FromQuery,
+    ' WithHeadings
+  }
+
+  class AssetImport <<Import>> {
+    + model(row) : Asset
+    + rules() : array
+    --
+    ' Implements: ToModel,
+    ' WithValidation
+  }
+
+}
+
+' ============================================================
+' NOTIFICATIONS
+' ============================================================
+package "Notifications" #fce4ec {
+
+  class ResetPasswordNotification <<Notification>> {
+    + token : string
+    --
+    + __construct(token)
+    + toMail(notifiable) : MailMessage
+    --
+    ' Mengirim link reset password
+    ' ke email pengguna
+  }
+
+}
+
+' ============================================================
+' RELASI ANTAR CLASS
+' ============================================================
+
+' ── Model Relationships ──
+User "1" o-- "0..*" Asset : created_by / updated_by
+User "1" o-- "0..*" ActivityLog : user_id
+Barang "1" *-- "0..*" Asset : kode_barang\n(RESTRICT del)
+Ruangan "1" o-- "0..*" Asset : ruangan_id\n(SET NULL del)
+
+' ── Controller → Model ──
+AssetController ..> Asset : uses
+AssetController ..> Barang : uses
+AssetController ..> Ruangan : uses
+AssetController ..> ActivityLogger : uses
+
+BarangController ..> Barang : uses
+RuanganController ..> Ruangan : uses
+RuanganController ..> Asset : uses
+
+MaintenanceController ..> Asset : uses
+MaintenanceController ..> User : uses
+MaintenanceController ..> ActivityLogger : uses
+MaintenanceController ..> MaintenanceAlert : creates
+
+UserController ..> User : uses
+UserController ..> AkunBaruMail : creates
+
+AuditLogController ..> ActivityLog : uses
+
+DashboardController ..> Asset : uses
+DashboardController ..> Barang : uses
+DashboardController ..> Ruangan : uses
+
+LaporanController ..> Asset : uses
+LaporanController ..> Ruangan : uses
+
+ExportController ..> AssetExportFile : creates
+ExportController ..> BarangExportFile : creates
+
+ImportController ..> AssetImport : creates
+
+' ── Middleware → Helper ──
+LogActivity ..> ActivityLogger : uses
+
+' ── Auth ──
+AuthenticatedSessionController ..> ActivityLogger : uses
+User ..> ResetPasswordNotification : sends
+
+@enduml

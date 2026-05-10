@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-07" version="21.0.0">
+  <diagram name="Activity Diagram - Audit Log">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="sw_root" value="Activity Diagram — Audit Log (Activity Log)" style="shape=pool;startSize=30;horizontal=1;childLayout=stackLayout;horizontalStack=1;resizeParent=1;resizeParentMax=0;collapsible=0;marginBottom=0;fillColor=#1a3470;fontColor=#ffffff;strokeColor=#1a3470;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="20" y="20" width="900" height="800" as="geometry"/></mxCell>
+        <mxCell id="sw_u" value="Admin" style="swimlane;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=12;horizontal=0;" vertex="1" parent="sw_root"><mxGeometry x="0" y="0" width="300" height="800" as="geometry"/></mxCell>
+        <mxCell id="sw_s" value="Sistem" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;horizontal=0;" vertex="1" parent="sw_root"><mxGeometry x="300" y="0" width="600" height="800" as="geometry"/></mxCell>
+        <mxCell id="als" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="sw_u"><mxGeometry x="135" y="30" width="30" height="30" as="geometry"/></mxCell>
+        <mxCell id="al1" value="Login sebagai Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="90" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="al2" value="Klik menu &quot;Log Aktivitas&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="160" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="als1" value="Cek middleware role:admin → abort(403) jika bukan admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="160" width="520" height="40" as="geometry"/></mxCell>
+        <mxCell id="als2" value="ActivityLog::with(&#39;user&#39;)-&gt;orderBy(&#39;created_at&#39;,&#39;desc&#39;)-&gt;paginate(20)&#xa;Tampilkan tabel log (id, user, aktivitas, keterangan, ip, waktu)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="230" width="520" height="60" as="geometry"/></mxCell>
+        <mxCell id="al3" value="Atur filter (opsional):&#xa;- Kata kunci&#xa;- Pengguna&#xa;- Modul (Login/Create/Update/Delete)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="330" width="200" height="80" as="geometry"/></mxCell>
+        <mxCell id="al4" value="Klik &quot;Filter&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="440" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="als3" value="Query dengan WHERE clause sesuai filter&#xa;(search LIKE, user_id =, aktivitas LIKE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="440" width="520" height="50" as="geometry"/></mxCell>
+        <mxCell id="als4" value="Tampilkan hasil filter (paginated 20/halaman)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="sw_s"><mxGeometry x="40" y="520" width="520" height="40" as="geometry"/></mxCell>
+        <mxCell id="al5" value="Melihat riwayat aktivitas pengguna" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="sw_u"><mxGeometry x="50" y="600" width="200" height="40" as="geometry"/></mxCell>
+        <mxCell id="alnote" value="Log dicatat otomatis oleh ActivityLogger::log()&#xa;setiap kali ada Login, Logout, Create, Update, Delete&#xa;Menyimpan: user_id, aktivitas, keterangan, ip_address, user_agent" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fontSize=10;fillColor=#fffacd;strokeColor=#d6b656;" vertex="1" parent="sw_s"><mxGeometry x="40" y="590" width="520" height="70" as="geometry"/></mxCell>
+        <mxCell id="ale" value="" style="ellipse;aspect=fixed;fillColor=#000000;strokeColor=#000000;double=1;" vertex="1" parent="sw_u"><mxGeometry x="135" y="740" width="30" height="30" as="geometry"/></mxCell>
+        <mxCell id="arr_als_al1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="als" target="al1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_al1_al2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="al1" target="al2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_al2_als1" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="al2" target="als1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_als1_als2" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="als1" target="als2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_als2_al3" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="als2" target="al3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_al3_al4" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="al3" target="al4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_al4_als3" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="al4" target="als3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_als3_als4" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="als3" target="als4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_als4_al5" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="als4" target="al5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="arr_al5_ale" value="" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" parent="1" source="al5" target="ale"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

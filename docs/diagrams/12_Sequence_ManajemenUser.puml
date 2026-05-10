@@ -1,0 +1,132 @@
+@startuml Sequence_ManajemenUser_SimAset
+' ============================================================
+' SEQUENCE DIAGRAM — Manajemen Pengguna (Admin Only)
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceParticipantBorderColor #2c3e50
+skinparam sequenceParticipantBackgroundColor #e8eaf6
+skinparam sequenceParticipantFontSize 11
+skinparam sequenceLifeLineBorderColor #2c3e50
+skinparam sequenceGroupBorderColor #1a3470
+skinparam sequenceGroupBackgroundColor #e3f2fd
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+skinparam sequenceActorBorderColor #1a3470
+skinparam sequenceActorBackgroundColor #bbdefb
+
+title <b>Sequence Diagram — Manajemen Pengguna (Admin Only)</b>\nSimAset RBTV Bengkulu
+
+actor "Admin" as Admin
+boundary ":Browser" as Browser
+control ":Router\n(middleware: role:admin)" as Router
+control ":UserController" as UserCtrl
+entity ":User\n(Model)" as UserModel
+entity ":AkunBaruMail\n(Mail)" as MailClass
+entity ":ActivityLogger\n(Helper)" as Logger
+database ":Database\n(MySQL)" as DB
+boundary ":SMTP Server" as SMTP
+
+== Lihat Daftar Pengguna ==
+
+Admin -> Browser : Klik menu "Kelola Pengguna"
+Browser -> Router : GET /users
+Router -> Router : Cek middleware 'role:admin'\nAuth::user()->role === 'admin'?
+
+alt Bukan Admin
+  Router --> Browser : HTTP 403 Forbidden
+  Browser --> Admin : Halaman akses ditolak
+else Admin terverifikasi
+end
+
+Router -> UserCtrl : index()
+UserCtrl -> UserModel : User::orderBy('role')->get()
+UserModel -> DB : SELECT * FROM users\nORDER BY role
+DB --> UserModel : [Admin Magang (admin), Staff RBTV (staff), reffki (staff)]
+UserModel --> UserCtrl : Collection $users
+UserCtrl --> Browser : view('users.index', compact('users'))
+Browser --> Admin : Daftar pengguna ditampilkan
+
+== Tambah Pengguna Baru ==
+
+Admin -> Browser : Klik "+ Tambah Pengguna"
+Browser -> UserCtrl : GET /users/create
+UserCtrl --> Browser : view('users.create')
+Browser --> Admin : Form tambah pengguna
+
+Admin -> Browser : Isi form:\n- Nama: "Staff Baru"\n- Email: "staff@rbtv.id"\n- Password: "Staff@123"\n- Role: staff\n- Kirim Email: ✓
+Browser -> UserCtrl : POST /users\n{name, email, password, role, kirim_email}
+
+UserCtrl -> UserCtrl : $request->validate([\n  'name' => 'required|string',\n  'email' => 'required|email|unique:users,email',\n  'password' => 'required|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/',\n  'role' => 'required|in:admin,staff'\n])
+
+alt Validasi gagal
+  UserCtrl --> Browser : Redirect back + errors
+  Browser --> Admin : Form dengan pesan error
+else Validasi berhasil
+end
+
+UserCtrl -> UserCtrl : $plainPassword = $request->password\n(simpan sebelum di-hash)
+
+UserCtrl -> UserModel : User::create([\n  'name' => 'Staff Baru',\n  'email' => 'staff@rbtv.id',\n  'password' => Hash::make('Staff@123'),\n  'role' => 'staff',\n  'is_active' => true\n])
+UserModel -> DB : INSERT INTO users\n(name, email, password, role, is_active,\ncreated_at, updated_at)\nVALUES (...)
+DB --> UserModel : User record (id=5)
+UserModel --> UserCtrl : $user
+
+alt kirim_email dicentang
+  UserCtrl -> MailClass : new AkunBaruMail($user, $plainPassword)
+  UserCtrl -> SMTP : Mail::to('staff@rbtv.id')->send($mail)
+  note right of SMTP
+    Email berisi:
+    - Nama pengguna
+    - Email login
+    - Password awal (plain text)
+    - URL sistem
+  end note
+  SMTP --> UserCtrl : Email terkirim
+else Tidak kirim email
+end
+
+UserCtrl -> Logger : ActivityLogger::logUser(\n  'Create',\n  'Menambahkan pengguna baru: Staff Baru (staff@rbtv.id)'\n)
+Logger -> DB : INSERT INTO log_aktivitas ...
+DB --> Logger : OK
+
+UserCtrl --> Browser : redirect()->route('users.index')\n->with('success', 'Pengguna berhasil ditambahkan')
+Browser --> Admin : Daftar pengguna dengan notifikasi sukses
+
+== Edit Pengguna ==
+
+Admin -> Browser : Klik Edit pada pengguna
+Browser -> UserCtrl : GET /users/{id}/edit
+UserCtrl -> UserModel : User::findOrFail($id)
+UserModel -> DB : SELECT * FROM users WHERE id = ?
+DB --> UserModel : User record
+UserModel --> UserCtrl : $user
+UserCtrl --> Browser : view('users.edit', compact('user'))
+Browser --> Admin : Form edit dengan data terisi
+
+Admin -> Browser : Ubah data dan klik "Simpan"
+Browser -> UserCtrl : PUT /users/{id}\n{name, email, role, is_active, password?}
+UserCtrl -> UserModel : $user->update($data)
+UserModel -> DB : UPDATE users SET ... WHERE id = ?
+DB --> UserModel : OK
+UserCtrl --> Browser : redirect()->route('users.index')\n->with('success', 'Data pengguna diperbarui')
+Browser --> Admin : Notifikasi sukses
+
+== Hapus Pengguna ==
+
+Admin -> Browser : Klik Hapus pada pengguna
+Browser -> Browser : Dialog konfirmasi SweetAlert2
+Admin -> Browser : Konfirmasi hapus
+Browser -> UserCtrl : DELETE /users/{id}
+UserCtrl -> UserModel : User::findOrFail($id)
+UserModel -> DB : SELECT * FROM users WHERE id = ?
+DB --> UserModel : User record
+UserModel --> UserCtrl : $user
+UserCtrl -> UserModel : $user->delete()
+UserModel -> DB : DELETE FROM users WHERE id = ?
+DB --> UserModel : OK
+UserCtrl --> Browser : redirect()->route('users.index')\n->with('success', 'Pengguna berhasil dihapus')
+Browser --> Admin : Notifikasi sukses
+
+@enduml

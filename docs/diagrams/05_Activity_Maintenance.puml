@@ -1,0 +1,117 @@
+@startuml Activity_Maintenance_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — Proses Maintenance Aset
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — Proses Maintenance Aset</b>\nSimAset RBTV Bengkulu
+
+|Pengguna (Staff/Admin)|
+start
+
+:Login ke sistem;
+
+' ============================================================
+' BAGIAN 1: SET MAINTENANCE
+' ============================================================
+note right
+  <b>BAGIAN 1: Set Aset ke Maintenance</b>
+end note
+
+:Buka halaman Detail Aset\n(contoh: AST-001 Kamera Sony A7);
+
+:Klik tombol "Set Maintenance";
+
+|Sistem|
+:Tampilkan modal konfirmasi\ndengan input keterangan (opsional);
+
+|Pengguna (Staff/Admin)|
+:Input keterangan kerusakan\n(opsional);
+:Klik "Konfirmasi";
+
+|Sistem|
+:Validasi keterangan\n(max 500 karakter);
+
+:Asset::update([\n  'status' => 'Maintenance',\n  'keterangan' => $request->keterangan,\n  'updated_by' => auth()->id()\n]);
+
+:ActivityLogger::logAsset(\n  'Update',\n  'Aset masuk maintenance: {nama} ({kode})'\n);
+
+:Redirect back\ndengan flash success;
+
+|Pengguna (Staff/Admin)|
+:Aset berhasil ditandai\nsebagai Maintenance;
+
+' ============================================================
+' BAGIAN 2: SELESAIKAN MAINTENANCE
+' ============================================================
+note right
+  <b>BAGIAN 2: Selesaikan Maintenance</b>
+end note
+
+:Buka menu "Maintenance"\ndari sidebar;
+
+|Sistem|
+:Query aset dengan\nstatus = 'Maintenance';
+:Tampilkan dashboard maintenance\n(daftar aset + statistik);
+
+|Pengguna (Staff/Admin)|
+:Pilih aset yang sudah selesai\ndiperbaiki;
+:Klik tombol "Selesai";
+
+|Sistem|
+:Tampilkan modal:\n- Pilih kondisi akhir (wajib)\n- Input keterangan (opsional);
+
+|Pengguna (Staff/Admin)|
+:Pilih kondisi akhir:\n(Baik / Rusak Ringan / Rusak Berat);
+:Input keterangan hasil perbaikan\n(opsional);
+:Klik "Konfirmasi Selesai";
+
+|Sistem|
+:Validasi kondisi wajib diisi;
+
+if (Validasi\ngagal?) then (Ya)
+  :Tampilkan pesan error;
+  |Pengguna (Staff/Admin)|
+  :Pilih kondisi;
+  |Sistem|
+else (Tidak)
+endif
+
+:Asset::update([\n  'status' => 'Aktif',\n  'kondisi' => $request->kondisi,\n  'keterangan' => $request->keterangan,\n  'updated_by' => auth()->id()\n]);
+
+:ActivityLogger::logAsset(\n  'Update',\n  'Maintenance selesai: {nama} ({kode})\n  — kondisi: {kondisi}'\n);
+
+:Query semua Admin aktif:\nUser::where('role','admin')\n  ->where('is_active', 1)->get();
+
+fork
+  :Kirim email notifikasi\nke setiap Admin:\nMail::to($admin->email)\n  ->send(new MaintenanceAlert(\n    $asset, 'selesai'\n  ));
+fork again
+  note right
+    Jika SMTP gagal,
+    exception di-catch
+    dan proses tetap lanjut
+  end note
+end fork
+
+:Redirect ke /maintenance\ndengan flash success;
+
+|Pengguna (Staff/Admin)|
+:Aset kembali berstatus Aktif;
+
+|Admin|
+:Menerima email notifikasi\n"Maintenance Selesai"\nuntuk aset {nama} ({kode});
+
+stop
+
+@enduml

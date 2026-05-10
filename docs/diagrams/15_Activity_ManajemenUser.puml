@@ -1,0 +1,145 @@
+@startuml Activity_ManajemenUser_SimAset
+' ============================================================
+' ACTIVITY DIAGRAM — Manajemen Pengguna (Admin Only)
+' SimAset RBTV Bengkulu
+' ============================================================
+
+skinparam activityBorderColor #2c3e50
+skinparam activityBackgroundColor #fffde7
+skinparam activityFontSize 11
+skinparam activityArrowColor #2c3e50
+skinparam activityArrowThickness 1.5
+skinparam swimlaneBorderColor #1a3470
+skinparam partitionBorderColor #1a3470
+skinparam partitionBackgroundColor #e8eaf6
+skinparam noteBorderColor #f9a825
+skinparam noteBackgroundColor #fffde7
+
+title <b>Activity Diagram — Manajemen Pengguna (Admin Only)</b>\nSimAset RBTV Bengkulu
+
+|Admin|
+start
+
+:Login ke sistem\n(dengan role: admin);
+
+:Klik menu "Kelola Pengguna"\ndari sidebar;
+
+|Sistem|
+:Cek middleware 'role:admin'\n(RoleMiddleware::handle());
+
+if (Role = admin?) then (Tidak)
+  :Tampilkan HTTP 403\nForbidden;
+  |Admin|
+  stop
+else (Ya)
+endif
+
+:Query semua pengguna\nUser::orderBy('role')->get();
+:Tampilkan daftar pengguna\n(tabel dengan kolom:\nNama, Email, Role, Status, Aksi);
+
+|Admin|
+:Pilih aksi;
+
+fork
+  ' ── TAMBAH PENGGUNA ──────────────────────────────────
+  :Klik "+ Tambah Pengguna";
+
+  |Sistem|
+  :Tampilkan form tambah pengguna;
+
+  |Admin|
+  :Isi form:\n- Nama Lengkap\n- Email\n- Password (min 8, uppercase,\n  lowercase, angka)\n- Role (admin/staff)\n- Kirim Email Notifikasi (opsional);
+
+  :Klik "Simpan";
+
+  |Sistem|
+  :Validasi input;
+
+  if (Validasi\ngagal?) then (Ya)
+    :Tampilkan error per field;
+    |Admin|
+    :Perbaiki input;
+    |Sistem|
+  else (Tidak)
+  endif
+
+  :Hash password dengan bcrypt;
+
+  :User::create($data);
+
+  if (Kirim email\ndicentang?) then (Ya)
+    :Mail::to($email)\n->send(new AkunBaruMail(\n  $user, $plainPassword\n));
+  else (Tidak)
+  endif
+
+  :Redirect ke daftar pengguna\ndengan flash success;
+
+fork again
+  ' ── EDIT PENGGUNA ────────────────────────────────────
+  :Klik ikon Edit\npada pengguna;
+
+  |Sistem|
+  :Load data pengguna;
+  :Tampilkan form edit\ndengan data terisi;
+
+  |Admin|
+  :Ubah data yang diperlukan\n(nama, email, role, status aktif,\npassword baru opsional);
+
+  :Klik "Simpan Perubahan";
+
+  |Sistem|
+  :Validasi input;
+
+  if (Validasi\ngagal?) then (Ya)
+    :Tampilkan error;
+    |Admin|
+    :Perbaiki input;
+    |Sistem|
+  else (Tidak)
+  endif
+
+  :User::update($data);
+
+  :Redirect ke daftar pengguna\ndengan flash success;
+
+fork again
+  ' ── HAPUS PENGGUNA ───────────────────────────────────
+  :Klik ikon Hapus\npada pengguna;
+
+  |Sistem|
+  :Tampilkan dialog konfirmasi\n(SweetAlert2);
+
+  |Admin|
+  if (Konfirmasi\nhapus?) then (Batal)
+    :Tutup dialog;
+  else (Hapus)
+  endif
+
+  |Sistem|
+  :User::delete()\n(hard delete);
+
+  :Redirect ke daftar pengguna\ndengan flash success;
+
+fork again
+  ' ── LIHAT AUDIT LOG ──────────────────────────────────
+  :Klik menu "Log Aktivitas";
+
+  |Sistem|
+  :Query log_aktivitas\ndengan relasi user\norderBy created_at DESC;
+  :Tampilkan tabel log aktivitas\n(paginated 20/halaman);
+
+  |Admin|
+  :Filter log berdasarkan:\n- Kata kunci\n- Pengguna\n- Modul (Login/Create/Update/Delete);
+
+  |Sistem|
+  :Query dengan filter\nyang dipilih;
+  :Tampilkan hasil filter;
+
+end fork
+
+|Admin|
+:Selesai;
+
+stop
+
+@enduml
