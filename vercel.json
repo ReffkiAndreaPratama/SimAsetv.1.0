@@ -10,12 +10,4 @@
       "destination": "/api/index.php"
     }
   ]
-}{
-  "outputDirectory": "public/build",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/public/index.php"
-    }
-  ]
 }
