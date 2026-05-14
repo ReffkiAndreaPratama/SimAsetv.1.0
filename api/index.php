@@ -2,6 +2,7 @@
 $root = '/var/task/user';
 chdir($root);
 
+// Buat semua direktori yang diperlukan di /tmp
 $dirs = [
     '/tmp/storage/framework/cache/data',
     '/tmp/storage/framework/sessions',
@@ -16,30 +17,29 @@ foreach ($dirs as $dir) {
     }
 }
 
+// Symlink bootstrap/cache ke /tmp/bootstrap/cache
+$bootstrapCache = $root . '/bootstrap/cache';
+if (!is_link($bootstrapCache) && is_dir($bootstrapCache)) {
+    // Copy existing files ke /tmp dulu
+    foreach (glob($bootstrapCache . '/*') as $file) {
+        copy($file, '/tmp/bootstrap/cache/' . basename($file));
+    }
+    // Hapus direktori asli dan buat symlink
+    rmdir($bootstrapCache);
+    symlink('/tmp/bootstrap/cache', $bootstrapCache);
+}
+
 require $root . '/vendor/autoload.php';
 
 $app = require_once $root . '/bootstrap/app.php';
 $app->useStoragePath('/tmp/storage');
 
-// Kernel bootstrap manual untuk tangkap error asli
-$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
-$request = Illuminate\Http\Request::capture();
-
 try {
-    // Boot semua service providers
-    $app->bootstrapWith([
-        Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,
-        Illuminate\Foundation\Bootstrap\LoadConfiguration::class,
-        Illuminate\Foundation\Bootstrap\HandleExceptions::class,
-        Illuminate\Foundation\Bootstrap\RegisterFacades::class,
-        Illuminate\Foundation\Bootstrap\RegisterProviders::class,
-        Illuminate\Foundation\Bootstrap\BootProviders::class,
-    ]);
-    echo "Bootstrap OK\n";
-    echo "APP_KEY set: " . (config('app.key') ? 'YES' : 'NO') . "\n";
-    echo "DB_CONNECTION: " . config('database.default') . "\n";
-    echo "View paths: " . implode(', ', config('view.paths', [])) . "\n";
+    $app->handleRequest(Illuminate\Http\Request::capture());
 } catch (\Throwable $e) {
-    echo "BOOTSTRAP ERROR: " . $e->getMessage() . "\n";
-    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n";
+    http_response_code(500);
+    header('Content-Type: text/plain');
+    echo "ERROR: " . $e->getMessage() . "\n\n";
+    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n\n";
+    echo "TRACE:\n" . $e->getTraceAsString();
 }
