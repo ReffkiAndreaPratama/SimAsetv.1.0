@@ -2,19 +2,32 @@
 $root = '/var/task/user';
 chdir($root);
 
+// Buat direktori storage di /tmp
+$dirs = [
+    '/tmp/storage/framework/cache/data',
+    '/tmp/storage/framework/sessions',
+    '/tmp/storage/framework/views',
+    '/tmp/storage/logs',
+    '/tmp/storage/app/public',
+    '/tmp/bootstrap/cache',
+];
+foreach ($dirs as $dir) {
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+}
+
+require $root . '/vendor/autoload.php';
+
+$app = require_once $root . '/bootstrap/app.php';
+$app->useStoragePath('/tmp/storage');
+
 try {
-    require $root . '/vendor/autoload.php';
-    echo "1. autoload OK\n";
-    
-    $app = require_once $root . '/bootstrap/app.php';
-    echo "2. bootstrap OK\n";
-    
-    echo "3. app class: " . get_class($app) . "\n";
-    echo "4. storage path: " . $app->storagePath() . "\n";
-    echo "5. base path: " . $app->basePath() . "\n";
-    
+    $app->handleRequest(Illuminate\Http\Request::capture());
 } catch (\Throwable $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n";
+    http_response_code(500);
+    header('Content-Type: text/plain');
+    echo "ERROR: " . $e->getMessage() . "\n\n";
+    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n\n";
     echo "TRACE:\n" . $e->getTraceAsString();
 }
