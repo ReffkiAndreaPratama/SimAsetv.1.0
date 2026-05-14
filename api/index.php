@@ -2,7 +2,6 @@
 $root = '/var/task/user';
 chdir($root);
 
-// Setup /tmp dirs
 foreach ([
     '/tmp/storage/framework/cache/data',
     '/tmp/storage/framework/sessions',
@@ -14,32 +13,43 @@ foreach ([
     is_dir($dir) || mkdir($dir, 0755, true);
 }
 
-// Salin cache files ke /tmp jika ada
-foreach (['packages.php', 'services.php', 'config.php', 'routes-v7.php', 'events.php'] as $file) {
-    $src = $root . '/bootstrap/cache/' . $file;
-    $dst = '/tmp/bootstrap/cache/' . $file;
-    if (file_exists($src) && !file_exists($dst)) {
-        copy($src, $dst);
-    }
-}
-
-// Patch: buat wrapper autoloader yang intercept PackageManifest
 require $root . '/vendor/autoload.php';
-
-// Monkey-patch: override bootstrap cache path via env
-putenv('APP_BOOTSTRAP_CACHE=/tmp/bootstrap/cache');
-$_ENV['APP_BOOTSTRAP_CACHE'] = '/tmp/bootstrap/cache';
 
 $app = require_once $root . '/bootstrap/app.php';
 $app->useStoragePath('/tmp/storage');
-
-// Override package manifest path
 $app->instance('path.bootstrap', '/tmp/bootstrap');
 
+// Bootstrap manual step by step
 try {
-    $app->handleRequest(Illuminate\Http\Request::capture());
+    $app->bootstrapWith([
+        Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,
+        Illuminate\Foundation\Bootstrap\LoadConfiguration::class,
+        Illuminate\Foundation\Bootstrap\HandleExceptions::class,
+        Illuminate\Foundation\Bootstrap\RegisterFacades::class,
+        Illuminate\Foundation\Bootstrap\RegisterProviders::class,
+        Illuminate\Foundation\Bootstrap\BootProviders::class,
+    ]);
 } catch (\Throwable $e) {
-    http_response_code(500);
+    die("BOOTSTRAP ERROR: " . $e->getMessage() . "\nFILE: " . $e->getFile() . ":" . $e->getLine());
+}
+
+// Dispatch request manual
+$request = Illuminate\Http\Request::capture();
+$router = $app->make('router');
+
+// Load routes
+$app->make(Illuminate\Contracts\Http\Kernel::class);
+
+try {
+    // Coba dispatch langsung
+    $response = $router->dispatch($request);
+    $response->send();
+} catch (Symfony\Component\HttpKernel\Exception\HttpException $e) {
+    header('Content-Type: text/plain');
+    echo "HTTP EXCEPTION: " . $e->getStatusCode() . " - " . $e->getMessage() . "\n";
+    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n";
+    echo $e->getTraceAsString();
+} catch (\Throwable $e) {
     header('Content-Type: text/plain');
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n";
