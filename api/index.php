@@ -13,7 +13,7 @@ foreach ([
     is_dir($dir) || mkdir($dir, 0755, true);
 }
 
-// Copy bootstrap cache files ke /tmp agar bisa ditulis
+// Copy bootstrap cache ke /tmp agar bisa ditulis ulang
 foreach (['packages.php', 'services.php'] as $file) {
     $src = $root . '/bootstrap/cache/' . $file;
     $dst = '/tmp/bootstrap/cache/' . $file;
@@ -22,20 +22,42 @@ foreach (['packages.php', 'services.php'] as $file) {
     }
 }
 
-// Symlink bootstrap/cache -> /tmp/bootstrap/cache
-$cacheDir = $root . '/bootstrap/cache';
-if (is_dir($cacheDir) && !is_link($cacheDir)) {
-    // Hapus isi direktori dulu
-    array_map('unlink', glob($cacheDir . '/*'));
-    rmdir($cacheDir);
-    symlink('/tmp/bootstrap/cache', $cacheDir);
-} elseif (!file_exists($cacheDir)) {
-    symlink('/tmp/bootstrap/cache', $cacheDir);
-}
-
 require $root . '/vendor/autoload.php';
 
-$app = require_once $root . '/bootstrap/app.php';
+// Patch PackageManifest sebelum app dibuat
+// dengan override class menggunakan runkit atau eval trick
+// Cara paling clean: extend Application dan override manifestPath
+
+class VercelApplication extends Illuminate\Foundation\Application
+{
+    public function getCachedPackagesPath(): string
+    {
+        return '/tmp/bootstrap/cache/packages.php';
+    }
+
+    public function getCachedServicesPath(): string
+    {
+        return '/tmp/bootstrap/cache/services.php';
+    }
+
+    public function bootstrapPath($path = ''): string
+    {
+        return '/tmp/bootstrap' . ($path ? DIRECTORY_SEPARATOR . $path : $path);
+    }
+}
+
+// Buat app manual karena bootstrap/app.php pakai Application::configure()
+// Kita perlu intercept setelah configure tapi sebelum create
+
+// Load bootstrap/app.php tapi ganti class Application
+$bootstrapContent = file_get_contents($root . '/bootstrap/app.php');
+$bootstrapContent = str_replace(
+    'use Illuminate\Foundation\Application;',
+    'use VercelApplication as Application;',
+    $bootstrapContent
+);
+
+$app = eval('?>' . $bootstrapContent);
 $app->useStoragePath('/tmp/storage');
 
 try {
