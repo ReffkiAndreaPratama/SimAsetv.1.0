@@ -14,8 +14,8 @@ foreach ([
     is_dir($dir) || mkdir($dir, 0755, true);
 }
 
-// Salin packages.php dan services.php ke /tmp/bootstrap/cache jika ada
-foreach (['packages.php', 'services.php'] as $file) {
+// Salin cache files ke /tmp jika ada
+foreach (['packages.php', 'services.php', 'config.php', 'routes-v7.php', 'events.php'] as $file) {
     $src = $root . '/bootstrap/cache/' . $file;
     $dst = '/tmp/bootstrap/cache/' . $file;
     if (file_exists($src) && !file_exists($dst)) {
@@ -23,30 +23,18 @@ foreach (['packages.php', 'services.php'] as $file) {
     }
 }
 
+// Patch: buat wrapper autoloader yang intercept PackageManifest
 require $root . '/vendor/autoload.php';
 
-// Override bootstrap/cache path sebelum app dibuat
-// dengan cara patch PackageManifest
-$app = new class($root, $root . '/public') extends Illuminate\Foundation\Application {
-    public function bootstrapPath($path = ''): string
-    {
-        return '/tmp/bootstrap' . ($path ? '/' . $path : '');
-    }
-};
+// Monkey-patch: override bootstrap cache path via env
+putenv('APP_BOOTSTRAP_CACHE=/tmp/bootstrap/cache');
+$_ENV['APP_BOOTSTRAP_CACHE'] = '/tmp/bootstrap/cache';
 
+$app = require_once $root . '/bootstrap/app.php';
 $app->useStoragePath('/tmp/storage');
-$app->singleton(
-    Illuminate\Contracts\Http\Kernel::class,
-    App\Http\Kernel::class
-);
-$app->singleton(
-    Illuminate\Contracts\Console\Kernel::class,
-    App\Console\Kernel::class
-);
-$app->singleton(
-    Illuminate\Contracts\Debug\ExceptionHandler::class,
-    App\Exceptions\Handler::class
-);
+
+// Override package manifest path
+$app->instance('path.bootstrap', '/tmp/bootstrap');
 
 try {
     $app->handleRequest(Illuminate\Http\Request::capture());
