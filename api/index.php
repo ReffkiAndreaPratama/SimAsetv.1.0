@@ -2,7 +2,6 @@
 $root = '/var/task/user';
 chdir($root);
 
-// Buat direktori storage di /tmp
 $dirs = [
     '/tmp/storage/framework/cache/data',
     '/tmp/storage/framework/sessions',
@@ -22,12 +21,25 @@ require $root . '/vendor/autoload.php';
 $app = require_once $root . '/bootstrap/app.php';
 $app->useStoragePath('/tmp/storage');
 
+// Kernel bootstrap manual untuk tangkap error asli
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$request = Illuminate\Http\Request::capture();
+
 try {
-    $app->handleRequest(Illuminate\Http\Request::capture());
+    // Boot semua service providers
+    $app->bootstrapWith([
+        Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,
+        Illuminate\Foundation\Bootstrap\LoadConfiguration::class,
+        Illuminate\Foundation\Bootstrap\HandleExceptions::class,
+        Illuminate\Foundation\Bootstrap\RegisterFacades::class,
+        Illuminate\Foundation\Bootstrap\RegisterProviders::class,
+        Illuminate\Foundation\Bootstrap\BootProviders::class,
+    ]);
+    echo "Bootstrap OK\n";
+    echo "APP_KEY set: " . (config('app.key') ? 'YES' : 'NO') . "\n";
+    echo "DB_CONNECTION: " . config('database.default') . "\n";
+    echo "View paths: " . implode(', ', config('view.paths', [])) . "\n";
 } catch (\Throwable $e) {
-    http_response_code(500);
-    header('Content-Type: text/plain');
-    echo "ERROR: " . $e->getMessage() . "\n\n";
-    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n\n";
-    echo "TRACE:\n" . $e->getTraceAsString();
+    echo "BOOTSTRAP ERROR: " . $e->getMessage() . "\n";
+    echo "FILE: " . $e->getFile() . ":" . $e->getLine() . "\n";
 }
