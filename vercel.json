@@ -1,38 +1,25 @@
 {
-    "version": 2,
-    "framework": null,
-    "functions": {
-        "api/index.php": {
-            "runtime": "vercel-php@0.7.2"
-        }
-    },
-    "routes": [
-        {
-            "src": "/build/(.*)",
-            "dest": "/public/build/$1"
-        },
-        {
-            "src": "/storage/(.*)",
-            "dest": "/public/storage/$1"
-        },
-        {
-            "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map))",
-            "dest": "/public/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/api/index.php"
-        }
-    ],
-    "env": {
-        "APP_ENV": "production",
-        "APP_DEBUG": "false",
-        "LOG_CHANNEL": "stderr",
-        "LOG_DEPRECATIONS_CHANNEL": "null",
-        "LOG_LEVEL": "error",
-        "CACHE_STORE": "array",
-        "SESSION_DRIVER": "cookie",
-        "QUEUE_CONNECTION": "sync",
-        "FILESYSTEM_DISK": "local"
+  "version": 2,
+  "framework": null,
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.2"
     }
+  },
+  "routes": [
+    { "src": "/build/(.*)", "dest": "/public/build/$1" },
+    { "src": "/storage/(.*)", "dest": "/public/storage/$1" },
+    { "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map))", "dest": "/public/$1" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "env": {
+    "APP_ENV": "production",
+    "APP_DEBUG": "false",
+    "LOG_CHANNEL": "stderr",
+    "LOG_LEVEL": "error",
+    "CACHE_STORE": "array",
+    "SESSION_DRIVER": "cookie",
+    "QUEUE_CONNECTION": "sync",
+    "FILESYSTEM_DISK": "local"
+  }
 }
